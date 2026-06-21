@@ -1,8 +1,6 @@
-<<<<<<< HEAD ﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
-  =======
+
   ﻿﻿
   <!DOCTYPE html>
-  >>>>>>> 551c6d76100b78124921691ce33f92f2188811ca
   <html lang="zh-CN">
 
   <head>
@@ -3616,10 +3614,14 @@ ENDMAP
           if (/法国|法兰西|巴黎/.test(text)) {
             return '₣';
           }
+<<<<<<< HEAD
           if (/英国|伦敦/.test(text)) {
             return '£';
           }
           return '¤'; // 通用货币符号，不再默认使用英镑
+=======
+          return '¤'; // 西方案例
+>>>>>>> 69e829eff341cd7c06ff65c932a41173d0f05d3b
         }
         // 近代/现代
         if (/蒸汽|工业|战后|民国|近代|现代|当代/.test(text)) {
@@ -3695,10 +3697,14 @@ ENDMAP
           if (/巴黎|法国/.test(text)) {
             return '€';
           }
+<<<<<<< HEAD
           if (/伦敦|英国/.test(text)) {
             return '£';
           }
           return '¤'; // 通用货币符号，不再默认使用英镑
+=======
+          return '¤';
+>>>>>>> 69e829eff341cd7c06ff65c932a41173d0f05d3b
         }
         // 真正的默认（无任何背景信息时）使用通用货币符号
         return '¤';
