@@ -1,0 +1,146 @@
+{
+  "residential": {
+    "name": "住宅",
+    "generator": "table",
+    "size": [
+      64,
+      32
+    ],
+    "tag": [
+      "residential"
+    ],
+    "design": {
+      "independence": 3,
+      "quality": 3,
+      "density": 3,
+      "enclosure": 2
+    }
+  },
+  "commercial": {
+    "name": "商业",
+    "generator": "perimeter",
+    "size": [
+      80,
+      40
+    ],
+    "tag": [
+      "commercial"
+    ],
+    "design": {
+      "localization": 3,
+      "scale": 3,
+      "convenience": 3
+    }
+  },
+  "industrial": {
+    "name": "工业",
+    "generator": "large-table",
+    "size": [
+      112,
+      56
+    ],
+    "tag": [
+      "industrial"
+    ],
+    "design": {
+      "environmental": 3,
+      "automation": 3,
+      "output": 3
+    }
+  },
+  "courtyard": {
+    "name": "临街底商住宅",
+    "generator": "perimeter",
+    "size": [
+      48,
+      40
+    ],
+    "tag": [
+      "residential",
+      "courtyard",
+      "commercial"
+    ],
+    "design": {
+      "independence": 5,
+      "quality": 4,
+      "density": 2,
+      "enclosure": 5
+    }
+  },
+  "highstreet": {
+    "name": "购物商业街",
+    "generator": "spine",
+    "size": [
+      80,
+      40
+    ],
+    "tag": [
+      "commercial",
+      "highstreet"
+    ]
+  },
+  "office": {
+    "name": "办公区",
+    "generator": "large-table",
+    "size": [
+      96,
+      48
+    ],
+    "tag": [
+      "office"
+    ]
+  },
+  "civic": {
+    "name": "市政预留",
+    "generator": "ungrowable",
+    "size": [
+      80,
+      80
+    ],
+    "tag": [
+      "civic"
+    ]
+  },
+  "slum": {
+    "name": "贫民窟",
+    "generator": "ungrowable",
+    "size": [
+      64,
+      64
+    ],
+    "tag": [
+      "slum"
+    ],
+    "placeable": false,
+    "style": {
+      "fill": "diagonal-hatch",
+      "baseColor": "#3a3a3a",
+      "strokeColor": "#1a1a1a",
+      "alpha": 0.45
+    }
+  },
+  "agricultural": {
+    "name": "农业区",
+    "generator": "ungrowable",
+    "size": [
+      80,
+      80
+    ],
+    "tag": [
+      "agricultural"
+    ],
+    "style": {
+      "fill": "grid-pattern",
+      "baseColor": "#7cb342",
+      "gridColor": "#aed581",
+      "strokeColor": "#558b2f",
+      "alpha": 0.55,
+      "gridSize": 16
+    },
+    "design": {
+      "sustainability": 3,
+      "economicBenefit": 3,
+      "collectivism": 3
+    }
+  }
+}

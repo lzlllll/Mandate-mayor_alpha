@@ -1,0 +1,150 @@
+{
+  "twoLane": {
+    "name": "二车道",
+    "modules": [
+      {
+        "name": "Sidewalk",
+        "width": 3
+      },
+      {
+        "name": "BikeLane",
+        "width": 1.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "BikeLane",
+        "width": 1.5
+      },
+      {
+        "name": "Sidewalk",
+        "width": 3
+      },
+      {
+        "name": "reservedWidth",
+        "width": 3
+      }
+    ]
+  },
+  "fourLane": {
+    "name": "四车道",
+    "modules": [
+      {
+        "name": "Sidewalk",
+        "width": 3
+      },
+      {
+        "name": "BikeLane",
+        "width": 1.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Median",
+        "width": 2
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "BikeLane",
+        "width": 1.5
+      },
+      {
+        "name": "Sidewalk",
+        "width": 3
+      },
+      {
+        "name": "reservedWidth",
+        "width": 3
+      }
+    ]
+  },
+  "sixLane": {
+    "name": "六车道",
+    "modules": [
+      {
+        "name": "Sidewalk",
+        "width": 3
+      },
+      {
+        "name": "BikeLane",
+        "width": 1.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Median",
+        "width": 2
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "Lane",
+        "width": 3.5
+      },
+      {
+        "name": "BikeLane",
+        "width": 1.5
+      },
+      {
+        "name": "Sidewalk",
+        "width": 3
+      },
+      {
+        "name": "reservedWidth",
+        "width": 3
+      }
+    ]
+  },
+  "internalRoad": {
+    "name": "内部道路",
+    "modules": [
+      {
+        "name": "Lane",
+        "width": 2
+      },
+      {
+        "name": "Lane",
+        "width": 2
+      },
+      {
+        "name": "reservedWidth",
+        "width": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,301 @@
+{
+    "needCategories": [
+        {
+            "id": 0,
+            "key": "FOOD",
+            "name": "食品"
+        },
+        {
+            "id": 1,
+            "key": "HOUSING",
+            "name": "住房"
+        },
+        {
+            "id": 2,
+            "key": "WATER",
+            "name": "饮水"
+        },
+        {
+            "id": 3,
+            "key": "EMPLOYMENT",
+            "name": "就业"
+        },
+        {
+            "id": 4,
+            "key": "HEALTH",
+            "name": "医疗"
+        },
+        {
+            "id": 5,
+            "key": "EDUCATION",
+            "name": "教育"
+        },
+        {
+            "id": 6,
+            "key": "SECURITY",
+            "name": "治安"
+        },
+        {
+            "id": 7,
+            "key": "ELECTRICITY",
+            "name": "电力"
+        },
+        {
+            "id": 8,
+            "key": "TRANSPORT",
+            "name": "交通"
+        },
+        {
+            "id": 9,
+            "key": "COMMERCE",
+            "name": "商业"
+        },
+        {
+            "id": 10,
+            "key": "ENVIRONMENT",
+            "name": "环境"
+        },
+        {
+            "id": 11,
+            "key": "DEVELOPMENT",
+            "name": "发展"
+        },
+        {
+            "id": 12,
+            "key": "CULTURE",
+            "name": "文化"
+        },
+        {
+            "id": 13,
+            "key": "TECH",
+            "name": "科技"
+        },
+        {
+            "id": 14,
+            "key": "INTERNET",
+            "name": "互联网"
+        },
+        {
+            "id": 15,
+            "key": "GLOBAL",
+            "name": "国际化"
+        }
+    ],
+    "classes": [
+        {
+            "id": "working",
+            "name": "劳动群众",
+            "description": "以基本生存需求为主的群体，关注就业、住房与基本公共服务。",
+            "needs": [
+                {
+                    "needId": 0,
+                    "weight": 18
+                },
+                {
+                    "needId": 1,
+                    "weight": 15
+                },
+                {
+                    "needId": 2,
+                    "weight": 12
+                },
+                {
+                    "needId": 3,
+                    "weight": 14
+                },
+                {
+                    "needId": 4,
+                    "weight": 12
+                },
+                {
+                    "needId": 5,
+                    "weight": 8
+                },
+                {
+                    "needId": 6,
+                    "weight": 6
+                },
+                {
+                    "needId": 7,
+                    "weight": 4
+                },
+                {
+                    "needId": 8,
+                    "weight": 3
+                },
+                {
+                    "needId": 9,
+                    "weight": 2
+                },
+                {
+                    "needId": 10,
+                    "weight": 2
+                },
+                {
+                    "needId": 11,
+                    "weight": 1
+                },
+                {
+                    "needId": 12,
+                    "weight": 1
+                },
+                {
+                    "needId": 13,
+                    "weight": 0
+                },
+                {
+                    "needId": 14,
+                    "weight": 0
+                },
+                {
+                    "needId": 15,
+                    "weight": 0
+                }
+            ]
+        },
+        {
+            "id": "middle",
+            "name": "中产阶级",
+            "description": "稳定就业的城市居民，关注教育、医疗、生活品质与个人发展。",
+            "needs": [
+                {
+                    "needId": 0,
+                    "weight": 8
+                },
+                {
+                    "needId": 1,
+                    "weight": 14
+                },
+                {
+                    "needId": 2,
+                    "weight": 4
+                },
+                {
+                    "needId": 3,
+                    "weight": 10
+                },
+                {
+                    "needId": 4,
+                    "weight": 12
+                },
+                {
+                    "needId": 5,
+                    "weight": 14
+                },
+                {
+                    "needId": 6,
+                    "weight": 8
+                },
+                {
+                    "needId": 7,
+                    "weight": 4
+                },
+                {
+                    "needId": 8,
+                    "weight": 6
+                },
+                {
+                    "needId": 9,
+                    "weight": 6
+                },
+                {
+                    "needId": 10,
+                    "weight": 6
+                },
+                {
+                    "needId": 11,
+                    "weight": 5
+                },
+                {
+                    "needId": 12,
+                    "weight": 2
+                },
+                {
+                    "needId": 13,
+                    "weight": 1
+                },
+                {
+                    "needId": 14,
+                    "weight": 0
+                },
+                {
+                    "needId": 15,
+                    "weight": 0
+                }
+            ]
+        },
+        {
+            "id": "elite",
+            "name": "精英阶级",
+            "description": "高收入、高影响力的群体，关注文化、科技与国际化发展。",
+            "needs": [
+                {
+                    "needId": 0,
+                    "weight": 2
+                },
+                {
+                    "needId": 1,
+                    "weight": 5
+                },
+                {
+                    "needId": 2,
+                    "weight": 1
+                },
+                {
+                    "needId": 3,
+                    "weight": 2
+                },
+                {
+                    "needId": 4,
+                    "weight": 6
+                },
+                {
+                    "needId": 5,
+                    "weight": 10
+                },
+                {
+                    "needId": 6,
+                    "weight": 8
+                },
+                {
+                    "needId": 7,
+                    "weight": 3
+                },
+                {
+                    "needId": 8,
+                    "weight": 4
+                },
+                {
+                    "needId": 9,
+                    "weight": 8
+                },
+                {
+                    "needId": 10,
+                    "weight": 6
+                },
+                {
+                    "needId": 11,
+                    "weight": 8
+                },
+                {
+                    "needId": 12,
+                    "weight": 12
+                },
+                {
+                    "needId": 13,
+                    "weight": 12
+                },
+                {
+                    "needId": 14,
+                    "weight": 8
+                },
+                {
+                    "needId": 15,
+                    "weight": 5
+                }
+            ]
+        }
+    ],
+    "version": 2,
+    "note": "needCategories 定义了所有需求项的 ID / 英文常量 key / 中文本地化名称。classes[].needs 中只使用 needId（整数）和 weight（百分比，同一阶级所有项之和为 100）。建议程序启动时根据 needCategories 构建 id→name 与 id→key 的查找表，用于显示。"
+}

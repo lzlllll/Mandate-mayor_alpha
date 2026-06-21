@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地图编辑器 · 矢量多边形</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #2b2b2b;
+            color: #eee;
+        }
+
+        #canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #3e6bb8;
+            cursor: crosshair;
+        }
+
+        .toolbar {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(40, 40, 40, 0.95);
+            padding: 10px 16px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            z-index: 1000;
+        }
+
+        .toolbar .sep {
+            width: 1px;
+            height: 22px;
+            background: #555;
+        }
+
+        .toolbar button {
+            padding: 7px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            background: #555;
+            color: #fff;
+            transition: background 0.15s;
+        }
+
+        .toolbar button:hover {
+            background: #777;
+        }
+
+        .toolbar button.active {
+            background: #2a7ae2;
+        }
+
+        .toolbar button.active.type-land {
+            background: #6fb054;
+            color: #111;
+        }
+
+        .toolbar button.active.type-hill {
+            background: #a0784a;
+        }
+
+        .toolbar button.active.type-water {
+            background: #3e6bb8;
+        }
+
+        .toolbar button[disabled] {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .toolbar .danger-btn {
+            background: #a84040;
+        }
+
+        .toolbar .danger-btn:hover {
+            background: #c85050;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(40, 40, 40, 0.9);
+            padding: 6px 18px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        .hint {
+            position: fixed;
+            top: 120px;
+            left: 16px;
+            background: rgba(40, 40, 40, 0.85);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.7;
+            max-width: 320px;
+            z-index: 1000;
+        }
+
+        .hint b {
+            color: #fff;
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 60px;
+            right: 16px;
+            background: rgba(40, 40, 40, 0.85);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            line-height: 1.6;
+            z-index: 1000;
+        }
+
+        .legend span {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            vertical-align: middle;
+            margin-right: 6px;
+            border: 1px solid #222;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="toolbar">
+        <button id="modePolygon" class="active">多边形 (P)</button>
+        <button id="modeCurve">曲线 (C)</button>
+        <button id="modeFreehand">手绘 (F)</button>
+        <div class="sep"></div>
+
+        <button id="brushWater" class="active type-water">水域 (1)</button>
+        <button id="brushLand" class="type-land">陆地 (2)</button>
+        <button id="brushHill" class="type-hill">山岗 (3)</button>
+        <div class="sep"></div>
+
+        <button id="resourceOil" class="type-oil">石油 (4)</button>
+        <button id="resourceMineral" class="type-mineral">矿产 (5)</button>
+        <button id="resourceFertile" class="type-fertile">沃土 (6)</button>
+        <button id="resourceForest" class="type-forest">森林 (7)</button>
+        <div class="sep"></div>
+
+        <button id="panBtn">拖拽 (H)</button>
+        <button id="fitBtn">适配 (0)</button>
+        <button id="resetViewBtn">重置视图</button>
+        <div class="sep"></div>
+
+        <button id="undoBtn" disabled>撤销 (Z)</button>
+        <button id="redoBtn" disabled>重做 (Y)</button>
+        <button id="deleteRegionBtn" disabled>删除选中 (Del)</button>
+        <div class="sep"></div>
+
+        <button id="exportBtn">导出 JSON</button>
+        <button id="importBtn">导入 JSON</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
+        <button id="clearBtn" class="danger-btn">清空</button>
+    </div>
+
+    <div class="hint">
+        <b>多边形模式</b>：点击放置顶点 · 双击 / Enter / 点击回起点闭合<br>
+        <b>曲线模式</b>：点击放置起点和控制点 · 点击回起点或双击闭合（使用贝塞尔曲线）<br>
+        <b>手绘模式</b>：按住左键描边 · 松手自动闭合<br>
+        <b>通用</b>：H = 拖拽工具 · Shift+拖动 / 中键 = 临时平移 · 0 = 适配全图 · 滚轮 = 缩放<br>
+        Esc = 取消当前轮廓 · Del = 删除选中多边形
+    </div>
+
+    <div class="legend">
+        <div><span style="background:#3e6bb8"></span>水域</div>
+        <div><span style="background:#6fb054"></span>陆地</div>
+        <div><span style="background:#a0784a"></span>山岗</div>
+    </div>
+
+    <div class="status" id="status">地图编辑器</div>
+
+    <script>
+        const APP_VERSION = 'V2-pre-alpha0.1';
+        const TERRAIN = { WATER: 0, LAND: 1, HILL: 2 };
+        const TERRAIN_COLORS = { 0: '#3e6bb8', 1: '#6fb054', 2: '#a0784a' };
+        const TERRAIN_NAMES = { 0: '水域', 1: '陆地', 2: '山岗' };
+
+        // 自然资源类型
+        const NATURAL_RESOURCE = { OIL: 0, MINERAL: 1, FERTILE: 2, FOREST: 3 };
+        const NATURAL_RESOURCE_COLORS = {
+            0: '#1a1a1a',   // 石油 - 黑色
+            1: '#8b4513',   // 矿产 - 棕色
+            2: '#8b8b00',   // 肥沃土地 - 暗黄色
+            3: '#228b22'    // 森林 - 深绿色
+        };
+        const NATURAL_RESOURCE_NAMES = { 0: '石油', 1: '矿产', 2: '肥沃土地', 3: '森林' };
+
+        // ===== 50km × 50km 边界 =====
+        // 1 米 = WORLD_PIXELS_PER_METER 世界像素
+        const WORLD_PIXELS_PER_METER = 2;
+        const BOUNDARY_HALF_METERS = 25000;                        // 单边 25km → 总 50km
+        const BOUNDARY_HALF = BOUNDARY_HALF_METERS * WORLD_PIXELS_PER_METER; // 世界像素
+        const WORLD_SIZE = BOUNDARY_HALF * 2;                      // 100000 world-pixels
+        function clampToBoundary(p) {
+            return {
+                x: Math.max(-BOUNDARY_HALF, Math.min(BOUNDARY_HALF, p.x)),
+                y: Math.max(-BOUNDARY_HALF, Math.min(BOUNDARY_HALF, p.y))
+            };
+        }
+        function clampPolygon(poly) {
+            if (!Array.isArray(poly)) return poly;
+            return poly.map(clampToBoundary);
+        }
+        // 动态缩放范围：最小能看见整张地图，最大便于精细编辑
+        function getMinScale() {
+            return Math.max(0.001, Math.min(canvas.width, canvas.height) / WORLD_SIZE);
+        }
+        function getMaxScale() { return 20; }
+        // 视图偏移限制：防止地图被拖到屏幕外太远
+        function clampViewOffset() {
+            const halfW = canvas.width / 2;
+            const halfH = canvas.height / 2;
+            const maxOffX = halfW + BOUNDARY_HALF * viewScale;
+            const maxOffY = halfH + BOUNDARY_HALF * viewScale;
+            if (viewOffsetX > maxOffX) viewOffsetX = maxOffX;
+            if (viewOffsetX < -maxOffX) viewOffsetX = -maxOffX;
+            if (viewOffsetY > maxOffY) viewOffsetY = maxOffY;
+            if (viewOffsetY < -maxOffY) viewOffsetY = -maxOffY;
+        }
+        // 适配：将整张地图以屏幕中心为原点显示完整
+        function fitToBounds() {
+            viewScale = Math.min(canvas.width, canvas.height) / WORLD_SIZE;
+            viewOffsetX = canvas.width / 2;
+            viewOffsetY = canvas.height / 2;
+        }
+        // 重置：回到初始 1.0 缩放 & 屏幕中心
+        function resetView() {
+            viewScale = 1.0;
+            viewOffsetX = canvas.width / 2;
+            viewOffsetY = canvas.height / 2;
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+
+        // ===== 视图变换 =====
+        let viewScale = 1.0;
+        let viewOffsetX = 0;
+        let viewOffsetY = 0;
+        let panMode = false;   // 是否处于"拖拽工具"模式
+        function resizeCanvas() {
+            const beforeWidth = canvas.width;
+            const beforeHeight = canvas.height;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            // 首次进入页面或尺寸改变时：确保缩放不小于"刚打开页面时自动适配
+            if (beforeWidth === 0 || beforeHeight === 0) {
+                fitToBounds();
+            }
+            redraw();
+        }
+        function screenToWorld(sx, sy) {
+            return { x: (sx - viewOffsetX) / viewScale, y: (sy - viewOffsetY) / viewScale };
+        }
+
+        // ===== 状态 =====
+        const MODE = { POLYGON: 'polygon', CURVE: 'curve', FREEHAND: 'freehand' };
+        let currentMode = MODE.POLYGON;
+        let currentType = TERRAIN.WATER;
+        let isResourceMode = false;  // true: 编辑自然资源, false: 编辑地形
+        // 已完成的多边形（可绘制顺序）
+        let regions = [];    // { type, polygon: [{x,y}] }
+        // 自然资源数据
+        let naturalResources = { regions: [] };  // { regions: [{ type, polygon }] }
+        // 当前正在绘制的轮廓
+        let pendingPoints = [];
+        let isFreehandDrawing = false;
+        // 选中（用于删除）
+        let selectedIndex = -1;
+        // 撤销/重做
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_UNDO = 20;
+
+        function snapshot() {
+            undoStack.push(JSON.stringify({ regions, naturalResources }));
+            if (undoStack.length > MAX_UNDO) undoStack.shift();
+            redoStack.length = 0;
+            refreshUndoRedo();
+        }
+        function refreshUndoRedo() {
+            document.getElementById('undoBtn').disabled = undoStack.length === 0;
+            document.getElementById('redoBtn').disabled = redoStack.length === 0;
+            document.getElementById('deleteRegionBtn').disabled = selectedIndex < 0;
+        }
+
+        // ===== 点 in 多边形（射线法）=====
+        function pointInPolygon(p, poly) {
+            if (!poly || poly.length < 3) return false;
+            let inside = false;
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                const xi = poly[i].x, yi = poly[i].y;
+                const xj = poly[j].x, yj = poly[j].y;
+                if (((yi > p.y) !== (yj > p.y)) &&
+                    (p.x < (xj - xi) * (p.y - yi) / (yj - yi + 1e-12) + xi))
+                    inside = !inside;
+            }
+            return inside;
+        }
+        function hitTest(wx, wy) {
+            if (isResourceMode) {
+                for (let i = naturalResources.regions.length - 1; i >= 0; i--) {
+                    if (pointInPolygon({ x: wx, y: wy }, naturalResources.regions[i].polygon)) return i;
+                }
+            } else {
+                for (let i = regions.length - 1; i >= 0; i--) {
+                    if (pointInPolygon({ x: wx, y: wy }, regions[i].polygon)) return i;
+                }
+            }
+            return -1;
+        }
+
+        // ===== 绘制 =====
+        function redraw() {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.setTransform(viewScale, 0, 0, viewScale, viewOffsetX, viewOffsetY);
+
+            // 先画底图（默认水域背景）
+            ctx.fillStyle = TERRAIN_COLORS[TERRAIN.WATER];
+            ctx.fillRect(-1000000, -1000000, 2000000, 2000000);
+
+            // 边界外的暗色遮罩（使用 evenodd 规则：大方框 - 中间镂空）
+            ctx.fillStyle = 'rgba(20, 25, 45, 0.55)';
+            ctx.beginPath();
+            ctx.rect(-1000000, -1000000, 2000000, 2000000);
+            ctx.rect(BOUNDARY_HALF, -BOUNDARY_HALF, -BOUNDARY_HALF * 2, BOUNDARY_HALF * 2); // 反向 → 镂空
+            ctx.fill('evenodd');
+
+            // 50km × 50km 边界线
+            ctx.lineWidth = 2 / viewScale;
+            ctx.strokeStyle = '#ff5252';
+            ctx.setLineDash([8 / viewScale, 6 / viewScale]);
+            ctx.strokeRect(-BOUNDARY_HALF, -BOUNDARY_HALF, BOUNDARY_HALF * 2, BOUNDARY_HALF * 2);
+            ctx.setLineDash([]);
+
+            // 按顺序画多边形区域
+            for (let i = 0; i < regions.length; i++) {
+                const r = regions[i];
+                const poly = r.polygon;
+                if (!poly || poly.length < 3) continue;
+                ctx.beginPath();
+                ctx.moveTo(poly[0].x, poly[0].y);
+                for (let k = 1; k < poly.length; k++) ctx.lineTo(poly[k].x, poly[k].y);
+                ctx.closePath();
+                ctx.fillStyle = TERRAIN_COLORS[r.type];
+                ctx.fill();
+                ctx.lineWidth = (!isResourceMode && i === selectedIndex ? 3 : 1.5) / viewScale;
+                ctx.strokeStyle = (!isResourceMode && i === selectedIndex) ? '#fff200' : 'rgba(0,0,0,0.55)';
+                ctx.stroke();
+            }
+
+            // 绘制自然资源
+            for (let i = 0; i < naturalResources.regions.length; i++) {
+                const r = naturalResources.regions[i];
+                const poly = r.polygon;
+                if (!poly || poly.length < 3) continue;
+                ctx.beginPath();
+                ctx.moveTo(poly[0].x, poly[0].y);
+                for (let k = 1; k < poly.length; k++) ctx.lineTo(poly[k].x, poly[k].y);
+                ctx.closePath();
+                ctx.fillStyle = NATURAL_RESOURCE_COLORS[r.type] + '60';  // 60%透明度
+                ctx.fill();
+                ctx.lineWidth = (isResourceMode && i === selectedIndex ? 3 : 1.5) / viewScale;
+                ctx.strokeStyle = (isResourceMode && i === selectedIndex) ? '#fff200' : NATURAL_RESOURCE_COLORS[r.type];
+                ctx.stroke();
+            }
+
+            // 正在绘制的轮廓
+            if (pendingPoints.length > 0) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+                ctx.lineWidth = 2 / viewScale;
+                ctx.setLineDash([4 / viewScale, 3 / viewScale]);
+
+                if (currentMode === MODE.CURVE) {
+                    // 曲线模式：使用贝塞尔曲线
+                    if (pendingPoints.length === 1) {
+                        // 只有起点：从起点画到鼠标（虚线）
+                        ctx.beginPath();
+                        ctx.moveTo(pendingPoints[0].x, pendingPoints[0].y);
+                        ctx.lineTo(mouseWorld.x, mouseWorld.y);
+                        ctx.stroke();
+                    } else if (pendingPoints.length === 2) {
+                        // 起点 + 控制点：显示两条虚线
+                        ctx.beginPath();
+                        ctx.moveTo(pendingPoints[0].x, pendingPoints[0].y);
+                        ctx.lineTo(pendingPoints[1].x, pendingPoints[1].y);
+                        ctx.moveTo(pendingPoints[1].x, pendingPoints[1].y);
+                        ctx.lineTo(mouseWorld.x, mouseWorld.y);
+                        ctx.stroke();
+                        // 预览曲线
+                        ctx.setLineDash([]);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                        ctx.beginPath();
+                        ctx.moveTo(pendingPoints[0].x, pendingPoints[0].y);
+                        ctx.quadraticCurveTo(pendingPoints[1].x, pendingPoints[1].y, mouseWorld.x, mouseWorld.y);
+                        ctx.stroke();
+                        ctx.setLineDash([4 / viewScale, 3 / viewScale]);
+                    } else if (pendingPoints.length >= 3) {
+                        // 完整曲线：最后一段使用贝塞尔曲线连接到起点
+                        ctx.beginPath();
+                        ctx.moveTo(pendingPoints[0].x, pendingPoints[0].y);
+                        for (let i = 1; i < pendingPoints.length - 1; i += 2) {
+                            if (i + 1 < pendingPoints.length) {
+                                ctx.quadraticCurveTo(pendingPoints[i].x, pendingPoints[i].y, pendingPoints[i + 1].x, pendingPoints[i + 1].y);
+                            } else {
+                                ctx.lineTo(pendingPoints[i].x, pendingPoints[i].y);
+                            }
+                        }
+                        // 从最后一个点到鼠标的预览曲线
+                        const last = pendingPoints[pendingPoints.length - 1];
+                        ctx.quadraticCurveTo(mouseWorld.x, mouseWorld.y, pendingPoints[0].x, pendingPoints[0].y);
+                        ctx.stroke();
+                    }
+                } else {
+                    // 多边形或手绘模式
+                    ctx.beginPath();
+                    ctx.moveTo(pendingPoints[0].x, pendingPoints[0].y);
+                    for (let i = 1; i < pendingPoints.length; i++) ctx.lineTo(pendingPoints[i].x, pendingPoints[i].y);
+                    if (currentMode === MODE.POLYGON) {
+                        // 橡皮条连到鼠标
+                        const last = mouseWorld;
+                        ctx.lineTo(last.x, last.y);
+                    } else {
+                        ctx.closePath();
+                    }
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+
+                // 半透明预览填充（曲线模式需要特殊处理）
+                if (pendingPoints.length >= 3 || (currentMode === MODE.CURVE && pendingPoints.length >= 3)) {
+                    ctx.beginPath();
+                    if (currentMode === MODE.CURVE) {
+                        // 曲线模式：使用贝塞尔曲线生成的多边形近似
+                        ctx.moveTo(pendingPoints[0].x, pendingPoints[0].y);
+                        for (let i = 1; i < pendingPoints.length - 1; i += 2) {
+                            if (i + 1 < pendingPoints.length) {
+                                ctx.quadraticCurveTo(pendingPoints[i].x, pendingPoints[i].y, pendingPoints[i + 1].x, pendingPoints[i + 1].y);
+                            }
+                        }
+                        // 闭合曲线
+                        const last = pendingPoints[pendingPoints.length - 1];
+                        ctx.quadraticCurveTo(mouseWorld.x, mouseWorld.y, pendingPoints[0].x, pendingPoints[0].y);
+                    } else {
+                        ctx.moveTo(pendingPoints[0].x, pendingPoints[0].y);
+                        for (let i = 1; i < pendingPoints.length; i++) ctx.lineTo(pendingPoints[i].x, pendingPoints[i].y);
+                        ctx.closePath();
+                    }
+                    ctx.fillStyle = hexToRgba(TERRAIN_COLORS[currentType], 0.45);
+                    ctx.fill();
+                }
+            }
+
+            // 多边形顶点标记
+            if (currentMode === MODE.POLYGON) {
+                for (let i = 0; i < pendingPoints.length; i++) {
+                    const p = pendingPoints[i];
+                    const sz = (i === 0 ? 6 : 4) / viewScale;
+                    ctx.fillStyle = i === 0 ? 'rgba(255,220,80,1)' : 'rgba(255,255,255,1)';
+                    ctx.fillRect(p.x - sz, p.y - sz, sz * 2, sz * 2);
+                }
+            }
+        }
+
+        updateStatus();
+
+        function hexToRgba(hex, a) {
+            const h = hex.replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        function updateStatus() {
+            let modeName;
+            if (currentMode === MODE.POLYGON) {
+                modeName = '多边形';
+            } else if (currentMode === MODE.CURVE) {
+                modeName = '曲线';
+            } else {
+                modeName = '手绘';
+            }
+            const mx = (mouseWorld.x / WORLD_PIXELS_PER_METER / 1000).toFixed(2);
+            const my = (mouseWorld.y / WORLD_PIXELS_PER_METER / 1000).toFixed(2);
+            statusEl.textContent = `地图编辑器 · 边界 50km×50km (±25km) · ${regions.length} 个区域 · 鼠标(${mx},${my})km · ${modeName} · ${TERRAIN_NAMES[currentType]}`;
+        }
+
+        // ===== 鼠标事件 =====
+        let mouseWorld = { x: 0, y: 0 };
+        let panActive = false;
+        let panLastX = 0, panLastY = 0;
+        let movedSinceDown = false;
+        let mouseDownScreen = { x: 0, y: 0 };
+
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDownScreen = { x: e.clientX, y: e.clientY };
+            movedSinceDown = false;
+
+            if (e.shiftKey || e.button === 1 || panMode) {
+                panActive = true;
+                panLastX = e.clientX;
+                panLastY = e.clientY;
+                canvas.style.cursor = 'grabbing';
+                return;
+            }
+            if (e.button !== 0) return;
+
+            const w = clampToBoundary(screenToWorld(e.clientX, e.clientY));
+
+            if (currentMode === MODE.POLYGON) {
+                if (pendingPoints.length >= 3) {
+                    const first = pendingPoints[0];
+                    const sx = first.x * viewScale + viewOffsetX;
+                    const sy = first.y * viewScale + viewOffsetY;
+                    if (Math.hypot(sx - e.clientX, sy - e.clientY) < 12) {
+                        commitPending();
+                        return;
+                    }
+                }
+                pendingPoints.push({ x: w.x, y: w.y });
+                redraw();
+            } else if (currentMode === MODE.CURVE) {
+                // 曲线模式：点击添加点
+                if (pendingPoints.length >= 2) {
+                    // 检查是否点击回到起点（闭合曲线）
+                    const first = pendingPoints[0];
+                    const sx = first.x * viewScale + viewOffsetX;
+                    const sy = first.y * viewScale + viewOffsetY;
+                    if (Math.hypot(sx - e.clientX, sy - e.clientY) < 12) {
+                        commitPending();
+                        return;
+                    }
+                }
+                pendingPoints.push({ x: w.x, y: w.y });
+                redraw();
+            } else if (currentMode === MODE.FREEHAND) {
+                pendingPoints = [{ x: w.x, y: w.y }];
+                isFreehandDrawing = true;
+                redraw();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouseWorld = clampToBoundary(screenToWorld(e.clientX, e.clientY));
+            if (!movedSinceDown && (Math.abs(e.clientX - mouseDownScreen.x) > 3 || Math.abs(e.clientY - mouseDownScreen.y) > 3)) {
+                movedSinceDown = true;
+            }
+            if (panActive) {
+                viewOffsetX += (e.clientX - panLastX);
+                viewOffsetY += (e.clientY - panLastY);
+                panLastX = e.clientX;
+                panLastY = e.clientY;
+                clampViewOffset();
+                redraw();
+                return;
+            }
+            if (currentMode === MODE.POLYGON && pendingPoints.length > 0) {
+                redraw();
+            } else if (currentMode === MODE.CURVE && pendingPoints.length > 0) {
+                // 曲线模式：实时预览
+                redraw();
+            } else if (currentMode === MODE.FREEHAND && isFreehandDrawing) {
+                const last = pendingPoints[pendingPoints.length - 1];
+                if (Math.hypot(mouseWorld.x - last.x, mouseWorld.y - last.y) >= 2 / viewScale) {
+                    pendingPoints.push({ x: mouseWorld.x, y: mouseWorld.y });
+                    redraw();
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (panActive) { panActive = false; canvas.style.cursor = 'crosshair'; return; }
+            if (currentMode === MODE.FREEHAND && isFreehandDrawing) {
+                isFreehandDrawing = false;
+                if (pendingPoints.length >= 3) commitPending();
+                else { pendingPoints = []; redraw(); }
+            }
+        });
+
+        canvas.addEventListener('dblclick', (e) => {
+            if (currentMode === MODE.POLYGON && pendingPoints.length >= 3) commitPending();
+        });
+
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            let newScale = viewScale * zoomFactor;
+            const minS = getMinScale();
+            const maxS = getMaxScale();
+            if (newScale < minS) newScale = minS;
+            if (newScale > maxS) newScale = maxS;
+            const before = screenToWorld(e.clientX, e.clientY);
+            viewScale = newScale;
+            viewOffsetX = e.clientX - before.x * viewScale;
+            viewOffsetY = e.clientY - before.y * viewScale;
+            clampViewOffset();
+            redraw();
+        }, { passive: false });
+
+        // ===== 键盘 =====
+        window.addEventListener('keydown', (e) => {
+            const k = e.key;
+            if (k === 'p' || k === 'P') setMode(MODE.POLYGON);
+            else if (k === 'f' || k === 'F') setMode(MODE.FREEHAND);
+            else if (k === '1') setType(TERRAIN.WATER);
+            else if (k === '2') setType(TERRAIN.LAND);
+            else if (k === '3') setType(TERRAIN.HILL);
+            else if (k === '4') setType(NATURAL_RESOURCE.OIL, true);
+            else if (k === '5') setType(NATURAL_RESOURCE.MINERAL, true);
+            else if (k === '6') setType(NATURAL_RESOURCE.FERTILE, true);
+            else if (k === '7') setType(NATURAL_RESOURCE.FOREST, true);
+            else if (k === 'h' || k === 'H') togglePanMode();
+            else if (k === '0') { fitToBounds(); redraw(); }
+            else if (k === 'Enter') {
+                if (pendingPoints.length >= 3) commitPending();
+            } else if (k === 'Escape') {
+                pendingPoints = []; selectedIndex = -1; refreshUndoRedo(); redraw();
+            } else if (k === 'z' || k === 'Z') { doUndo(); }
+            else if (k === 'y' || k === 'Y') { doRedo(); }
+            else if (k === 'Delete' || k === 'Backspace') {
+                if (selectedIndex >= 0) deleteSelected();
+                else if (pendingPoints.length > 0 && currentMode === MODE.POLYGON) { pendingPoints.pop(); redraw(); }
+            }
+        });
+
+        // ===== 操作函数 =====
+        function setMode(m) {
+            currentMode = m;
+            panMode = false;
+            pendingPoints = [];
+            document.getElementById('modePolygon').classList.toggle('active', m === MODE.POLYGON);
+            document.getElementById('modeCurve').classList.toggle('active', m === MODE.CURVE);
+            document.getElementById('modeFreehand').classList.toggle('active', m === MODE.FREEHAND);
+            document.getElementById('panBtn').classList.remove('active');
+            canvas.style.cursor = 'crosshair';
+            redraw();
+        }
+        function setType(t, isResource = false) {
+            currentType = t;
+            isResourceMode = isResource;
+            // 地形类型按钮
+            document.getElementById('brushWater').classList.toggle('active', !isResource && t === TERRAIN.WATER);
+            document.getElementById('brushLand').classList.toggle('active', !isResource && t === TERRAIN.LAND);
+            document.getElementById('brushHill').classList.toggle('active', !isResource && t === TERRAIN.HILL);
+            // 自然资源类型按钮
+            document.getElementById('resourceOil').classList.toggle('active', isResource && t === NATURAL_RESOURCE.OIL);
+            document.getElementById('resourceMineral').classList.toggle('active', isResource && t === NATURAL_RESOURCE.MINERAL);
+            document.getElementById('resourceFertile').classList.toggle('active', isResource && t === NATURAL_RESOURCE.FERTILE);
+            document.getElementById('resourceForest').classList.toggle('active', isResource && t === NATURAL_RESOURCE.FOREST);
+            redraw();
+        }
+        function togglePanMode() {
+            panMode = !panMode;
+            document.getElementById('panBtn').classList.toggle('active', panMode);
+            document.getElementById('modePolygon').classList.remove('active');
+            document.getElementById('modeCurve').classList.remove('active');
+            document.getElementById('modeFreehand').classList.remove('active');
+            canvas.style.cursor = panMode ? 'grab' : 'crosshair';
+        }
+        function commitPending() {
+            // 曲线模式需要至少 3 个点（起点、控制点、终点）
+            const minPoints = currentMode === MODE.CURVE ? 3 : 3;
+            if (pendingPoints.length < minPoints) { pendingPoints = []; redraw(); return; }
+
+            snapshot();
+            let clampedPoly = clampPolygon(pendingPoints);
+
+            // 曲线模式：需要将贝塞尔曲线转换为多边形近似
+            if (currentMode === MODE.CURVE) {
+                clampedPoly = bezierToPolygon(clampedPoly);
+            }
+
+            if (isResourceMode) {
+                naturalResources.regions.push({ type: currentType, polygon: clampedPoly });
+                selectedIndex = naturalResources.regions.length - 1;
+            } else {
+                regions.push({ type: currentType, polygon: clampedPoly });
+                selectedIndex = regions.length - 1;
+            }
+            pendingPoints = [];
+            refreshUndoRedo();
+            redraw();
+        }
+
+        // 将贝塞尔曲线转换为多边形近似
+        function bezierToPolygon(points, segments = 20) {
+            if (points.length < 3) return points;
+
+            const result = [];
+            // 第一个点
+            result.push({ x: points[0].x, y: points[0].y });
+
+            // 遍历贝塞尔曲线段（每3个点为一段：起点、控制点、终点）
+            for (let i = 0; i < points.length - 1; i += 2) {
+                const p0 = points[i];
+                const p1 = points[i + 1];
+                const p2 = points[i + 2] || points[0]; // 最后一段回到起点
+
+                // 细分贝塞尔曲线
+                for (let t = 1; t <= segments; t++) {
+                    const u = t / segments;
+                    const x = Math.pow(1 - u, 2) * p0.x + 2 * (1 - u) * u * p1.x + Math.pow(u, 2) * p2.x;
+                    const y = Math.pow(1 - u, 2) * p0.y + 2 * (1 - u) * u * p1.y + Math.pow(u, 2) * p2.y;
+                    result.push({ x, y });
+                }
+            }
+
+            return result;
+        }
+        function deleteSelected() {
+            if (selectedIndex < 0) return;
+            snapshot();
+            if (isResourceMode) {
+                naturalResources.regions.splice(selectedIndex, 1);
+            } else {
+                regions.splice(selectedIndex, 1);
+            }
+            selectedIndex = -1;
+            refreshUndoRedo();
+            redraw();
+        }
+        function doUndo() {
+            if (undoStack.length === 0) return;
+            redoStack.push(JSON.stringify({ regions, naturalResources }));
+            const saved = JSON.parse(undoStack.pop());
+            regions = saved.regions || [];
+            naturalResources = saved.naturalResources || { regions: [] };
+            selectedIndex = -1;
+            refreshUndoRedo();
+            redraw();
+        }
+        function doRedo() {
+            if (redoStack.length === 0) return;
+            undoStack.push(JSON.stringify({ regions, naturalResources }));
+            const saved = JSON.parse(redoStack.pop());
+            regions = saved.regions || [];
+            naturalResources = saved.naturalResources || { regions: [] };
+            selectedIndex = -1;
+            refreshUndoRedo();
+            redraw();
+        }
+
+        // 点击选择（空白点中无操作时 — 但双击已有多边形区域的内部可选中）
+        // 为了简化：点击时如果当前不是绘制中，先尝试选中一个已有的区域
+        canvas.addEventListener('click', (e) => {
+            if (pendingPoints.length > 0 || isFreehandDrawing) return;
+            if (movedSinceDown) return;
+            const w = screenToWorld(e.clientX, e.clientY);
+            const idx = hitTest(w.x, w.y);
+            selectedIndex = idx;
+            refreshUndoRedo();
+            redraw();
+        });
+
+        // ===== 工具栏按钮 =====
+        document.getElementById('modePolygon').addEventListener('click', () => setMode(MODE.POLYGON));
+        document.getElementById('modeCurve').addEventListener('click', () => setMode(MODE.CURVE));
+        document.getElementById('modeFreehand').addEventListener('click', () => setMode(MODE.FREEHAND));
+        document.getElementById('brushWater').addEventListener('click', () => setType(TERRAIN.WATER));
+        document.getElementById('brushLand').addEventListener('click', () => setType(TERRAIN.LAND));
+        document.getElementById('brushHill').addEventListener('click', () => setType(TERRAIN.HILL));
+        document.getElementById('resourceOil').addEventListener('click', () => setType(NATURAL_RESOURCE.OIL, true));
+        document.getElementById('resourceMineral').addEventListener('click', () => setType(NATURAL_RESOURCE.MINERAL, true));
+        document.getElementById('resourceFertile').addEventListener('click', () => setType(NATURAL_RESOURCE.FERTILE, true));
+        document.getElementById('resourceForest').addEventListener('click', () => setType(NATURAL_RESOURCE.FOREST, true));
+        document.getElementById('panBtn').addEventListener('click', togglePanMode);
+        document.getElementById('fitBtn').addEventListener('click', () => { fitToBounds(); redraw(); });
+        document.getElementById('resetViewBtn').addEventListener('click', () => { resetView(); redraw(); });
+        document.getElementById('undoBtn').addEventListener('click', doUndo);
+        document.getElementById('redoBtn').addEventListener('click', doRedo);
+        document.getElementById('deleteRegionBtn').addEventListener('click', deleteSelected);
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (!confirm('确定要清空地图吗？')) return;
+            snapshot();
+            regions = [];
+            selectedIndex = -1;
+            refreshUndoRedo();
+            redraw();
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const data = {
+                type: 'terrain-map',
+                version: APP_VERSION,
+                regions: regions,
+                naturalResources: naturalResources
+            };
+            const str = JSON.stringify(data, null, 2);
+            const blob = new Blob([str], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'terrain-map.json'; a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        const importBtn = document.getElementById('importBtn');
+        const importFile = document.getElementById('importFile');
+        importBtn.addEventListener('click', () => importFile.click());
+        importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const parsed = JSON.parse(ev.target.result);
+                    if (!parsed || typeof parsed !== 'object') throw new Error('格式错误');
+                    if (parsed.type !== 'terrain-map') throw new Error('不是 terrain-map 类型文件');
+                    if (parsed.version !== APP_VERSION) throw new Error('版本不兼容：' + (parsed.version || '未知'));
+                    if (!parsed.regions || !Array.isArray(parsed.regions)) throw new Error('缺少 regions 数据');
+                    snapshot();
+                    regions = parsed.regions
+                        .filter(r => r && Array.isArray(r.polygon) && r.polygon.length >= 3)
+                        .map(r => ({ type: r.type, polygon: clampPolygon(r.polygon) }));
+                    // 导入自然资源数据
+                    naturalResources = parsed.naturalResources || { regions: [] };
+                    if (naturalResources.regions) {
+                        naturalResources.regions = naturalResources.regions
+                            .filter(r => r && Array.isArray(r.polygon) && r.polygon.length >= 3)
+                            .map(r => ({ type: r.type, polygon: clampPolygon(r.polygon) }));
+                    }
+                    selectedIndex = -1;
+                    fitToBounds();  // 导入后自动居中显示全图
+                    refreshUndoRedo();
+                    redraw();
+                    const resourceCount = naturalResources.regions ? naturalResources.regions.length : 0;
+                    alert('地图已成功导入（' + regions.length + ' 个地形区域，' + resourceCount + ' 个自然资源区域）');
+                } catch (err) {
+                    alert('读取失败：' + err.message);
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        // 启动
+        refreshUndoRedo();
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+
+</html>

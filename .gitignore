@@ -1,0 +1,22 @@
+# 依赖目录
+node_modules/
+
+# GitHub Pages 不需要的文件
+server.js
+package.json
+package-lock.json
+start.bat
+
+# 地图编辑器临时存档（已改为localStorage）
+maps/saves/
+maps/server.js
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.log
+
+# 开发文件
+find-elements.js
+tailwind-input.css
+*.txt
