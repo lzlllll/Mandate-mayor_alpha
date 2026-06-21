@@ -1105,7 +1105,6 @@ function loadOpeningDeclaration() {
 
 function loadPresets() {
   if (_presetsLoaded) return;
-  _presetsLoaded = true;
   var url = assetPath('开局.txt');
   fetch(url, { cache: 'no-cache' })
     .then(function (r) {
@@ -1120,8 +1119,8 @@ function loadPresets() {
       console.warn('加载预设剧本失败 (尝试路径: ' + url + '):', e);
       fetch('开局.txt', { cache: 'no-cache' })
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-        .then(function (text) { _presets = parsePresets(text); })
-        .catch(function () { _presets = []; });
+        .then(function (text) { _presets = parsePresets(text); _presetsLoaded = true; })
+        .catch(function () { _presets = []; _presetsLoaded = true; });
     });
 }
 
@@ -1700,6 +1699,19 @@ var START_SYSTEM_PROMPT = [
   '6.【极端重要】city.terrain和city_map完全由玩家在任命档案中的"地形特征"和"气候类型"决定！\n   - 玩家选择"平原"→无ocean/mountain区域，仅少量river\n   - 玩家选择"狭长海岸"→一侧有ocean rect区域\n   - 玩家选择"岛屿"→四周ocean包裹少量陆地\n   - 玩家选择"山地"→有大量mountain polygon区域\n   - 玩家选择"沿海"/"河口"→必须有ocean rect区域\n   先严格根据用户描述的地形特征决定整体布局。\n   - layout: 整体地形布局描述\n   - water_direction: 水域方向\n   - mountain_direction: 山地方向\n   - river_direction: 河流方向\n\n7.🧠 city_map地形生成思维链（先思考再填）：\n   a) 城市位于怎样的自然地理？海岸/山脉/河流如何分布？⚡若ocean+river同时存在，河流终点必须入海！\n   b) 各地形占比：平原≥40%、海洋≤20%、山地≤15%、森林≤15%、河流/道路<10%\n   c) ⚠️森林(forest)和山脉(mountain)不能放在市中心（grid中心2格半径内）\n   d) 区划blocks按grid_size²比例缩放，目标约30%城区面积：road×2~5%，res×8~15%，com×3~7%，ind×2~5%，sub×1~3%，trans×0.5~2%。34²网格≈300~370blocks。\n   e) 地标放在合理地形：🏛️市政厅在城区中央、⚓港口在水边、🏭工厂在工业区、🏠小区在居住区\n   city_map用regions列表(仅自然地形)+districts列表(人工区划)描述（默认平原）。自然(8):ocean/mountain/river/lake/forest/desert/swamp/plain。区划(6):road/residential/commercial/industrial/suburb/transport。districts只传type+name+blocks+status，不传形状。坐标0~' + (mapGridSize - 1) + '。landmarks=设施emoji含name/icon/district（district=区划名或自然类型，市政厅district=""），不传坐标。legend=emoji→名称映射。'
 ].join('\n');
 
+function startApplyCustomInputInternal() {
+  var customInput = document.getElementById('start-custom-input').value;
+  if (!customInput || customInput.trim().length === 0) {
+    alert('请先输入自定义开局信息');
+    return;
+  }
+  var previewEl = document.getElementById('start-preview');
+  previewEl.textContent = customInput.trim();
+  alert('自定义开局信息已应用到预览框');
+}
+
+window.startApplyCustomInput = function () { if (typeof startApplyCustomInputInternal === 'function') startApplyCustomInputInternal(); };
+
 function startLaunchGameInternal() {
   // 检查API配置
   var apiUrl = localStorage.getItem('aic_api_url') || '';
@@ -1708,11 +1720,18 @@ function startLaunchGameInternal() {
     alert('请先在设置中配置DeepSeek API。点击右上角⚙️按钮进行配置。');
     return;
   }
-  // 生成任命书
-  startGeneratePreviewInternal();
+  var customInput = document.getElementById('start-custom-input');
+  var hasCustomInput = customInput && customInput.value && customInput.value.trim().length > 0;
+  if (!hasCustomInput) {
+    startGeneratePreviewInternal();
+  }
   var appointmentText = document.getElementById('start-preview').textContent;
   if (!appointmentText || appointmentText.length < 50) {
-    alert('请完成市长任命档案的填写。');
+    if (hasCustomInput) {
+      alert('自定义开局信息内容太短，请至少输入50个字符。');
+      return;
+    }
+    alert('请完成市长任命档案的填写，或在第五步直接粘贴自定义开局信息。');
     startSwitchTabInternal('mayor');
     return;
   }

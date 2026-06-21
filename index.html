@@ -1412,6 +1412,12 @@
               <div class="start-card-header">市长任命书预览</div>
               <div id="start-preview" class="start-preview-box"></div>
             </div>
+            <div class="start-card">
+              <div class="start-card-header">📝 直接粘贴自定义开局信息（可选）</div>
+              <div class="start-form-group"><textarea id="start-custom-input" rows="6"
+                  placeholder="在此粘贴自定义开局文本或JSON数据..."></textarea></div>
+              <button class="start-btn start-btn-secondary" onclick="startApplyCustomInput()">✅ 使用自定义信息替换预览</button>
+            </div>
             <button id="start-btn-launch" class="start-btn start-btn-success"
               onclick="window.playSound('new_game', 0.5); startLaunchGame()">🚀 开始游戏（AI
               生成开局）</button>
@@ -1619,6 +1625,7 @@
           <span id="hdr-city" class="text-2xl font-bold font-cyber text-[#8b5a2b]"
             style="text-shadow:2px 2px 4px rgba(0,0,0,0.5)">新罗马</span>
           <span id="hdr-time" class="text-gray-600 text-sm">📅 1847年7月15日</span>
+          <span id="hdr-liquid" class="text-[#2d5016] font-bold text-sm ml-2">💧 流动/外汇：-</span>
           <span id="hdr-weather" class="text-gray-600 text-sm"></span>
         </div>
         <div class="support-group">
@@ -2049,6 +2056,7 @@
       window.startGeneratePreview = function () { if (typeof startGeneratePreviewInternal === 'function') startGeneratePreviewInternal(); };
       window.startLaunchGame = function () { if (typeof startLaunchGameInternal === 'function') startLaunchGameInternal(); };
       window.refreshOpeningFromPanel = function () { if (typeof refreshOpeningFromPanel === 'function') refreshOpeningFromPanel(); };
+      window.startApplyCustomInput = function () { if (typeof startApplyCustomInputInternal === 'function') startApplyCustomInputInternal(); };
 
       console.log('全局函数存根已设置');
 
@@ -4295,6 +4303,17 @@ ENDMAP
         ].join('\n');
       }
 
+      function startApplyCustomInputInternal() {
+        var customInput = document.getElementById('start-custom-input').value;
+        if (!customInput || customInput.trim().length === 0) {
+          alert('请先输入自定义开局信息');
+          return;
+        }
+        var previewEl = document.getElementById('start-preview');
+        previewEl.textContent = customInput.trim();
+        alert('自定义开局信息已应用到预览框');
+      }
+
       function startLaunchGameInternal() {
         window.playNewGame();
         // 检查API配置
@@ -4304,11 +4323,16 @@ ENDMAP
           alert('请先在设置中配置DeepSeek API。点击右上角⚙️按钮进行配置。');
           return;
         }
-        // 生成任命书
-        startGeneratePreviewInternal();
+        // 检查自定义输入
+        var customInput = document.getElementById('start-custom-input');
+        var hasCustomInput = customInput && customInput.value && customInput.value.trim().length > 0;
+        // 如果没有自定义输入，生成任命书；否则保留预览框中的内容
+        if (!hasCustomInput) {
+          startGeneratePreviewInternal();
+        }
         var appointmentText = document.getElementById('start-preview').textContent;
         if (!appointmentText || appointmentText.length < 50) {
-          alert('请完成市长任命档案的填写。');
+          alert('请完成市长任命档案的填写，或在第五步直接粘贴自定义开局信息。');
           startSwitchTabInternal('mayor');
           return;
         }
@@ -7608,6 +7632,7 @@ ENDMAP
         document.getElementById('hdr-support').textContent = sup + '%';
         document.getElementById('hdr-stability').textContent = '⚖️ ' + (gameState.macro.political_stability || '78%');
         document.getElementById('hdr-corruption').textContent = '🦠 ' + (gameState.admin.corruption || '18%');
+        document.getElementById('hdr-liquid').textContent = '💧 ' + (gameState.macro.liquid_fx || '流动/外汇：-');
       }
 
       function renderMacroCard() {
@@ -7660,7 +7685,39 @@ ENDMAP
           ['🚦 交通', l.traffic, ''],
           ['🫁 污染', l.pollution, '']
         ];
-        document.getElementById('card-land').innerHTML = items.map(function (x) { return '<div class="flex justify-between py-0.5"><span class="text-gray-600">' + x[0] + '</span><span class="' + (x[2] || '') + '">' + x[1] + '</span></div>'; }).join('');
+        var landHtml = items.map(function (x) { return '<div class="flex justify-between py-0.5"><span class="text-gray-600">' + x[0] + '</span><span class="' + (x[2] || '') + '">' + x[1] + '</span></div>'; }).join('');
+        var resourcesHtml = renderResourcePanel();
+        document.getElementById('card-land').innerHTML = landHtml + resourcesHtml;
+      }
+
+      function renderResourcePanel() {
+        var resources = gameState.resources || {};
+        var resourceList = resources.list || [];
+        if (resourceList.length === 0) {
+          var facilities = gameState.econ && gameState.econ.facilities ? gameState.econ.facilities : [];
+          var resourceTypes = {};
+          facilities.forEach(function (f) {
+            if (f.type && (f.type.indexOf('矿') !== -1 || f.type.indexOf('资源') !== -1 || f.type.indexOf('油') !== -1 || f.type.indexOf('电') !== -1)) {
+              resourceTypes[f.type] = (resourceTypes[f.type] || 0) + 1;
+            }
+          });
+          Object.keys(resourceTypes).forEach(function (type) {
+            resourceList.push({ name: type, reserves: '待勘探', explored: true });
+          });
+        }
+        if (resourceList.length === 0) {
+          return '<div class="col-span-2 border-t border-[#a83232]/20 mt-2 pt-2"><div class="text-gray-400 text-center">暂无已探明资源</div></div>';
+        }
+        var html = '<div class="col-span-2 border-t border-[#a83232]/20 mt-2 pt-2">';
+        html += '<div class="font-bold text-[#a83232] mb-1">💎 已探明资源</div>';
+        html += '<div class="grid grid-cols-2 gap-0.5">';
+        resourceList.forEach(function (r) {
+          var reserves = r.reserves || '待勘探';
+          var statusClass = r.reserves && r.reserves.indexOf('枯竭') !== -1 ? 'text-red-600' : (r.reserves && r.reserves.indexOf('丰富') !== -1 ? 'text-green-600' : '');
+          html += '<div class="flex justify-between py-0.5"><span class="text-gray-600">' + (r.name || '未知资源') + '</span><span class="' + statusClass + '">' + reserves + '</span></div>';
+        });
+        html += '</div></div>';
+        return html;
       }
 
       function renderMayor() {
