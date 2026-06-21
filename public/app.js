@@ -5281,6 +5281,26 @@ function mergeMapLegend(newLegend) {
 // ==================== Canvas 地图（缩放+拖动+Hover） ====================
 var _mapView = { scale: 1, offsetX: 0, offsetY: 0, dragging: false, dragStartX: 0, dragStartY: 0, dragStartOX: 0, dragStartOY: 0 };
 var _mapCache = { size: 8, ox: 0, oy: 0, cellSize: 0, grid: null, iconMap: null, landmarks: null, regions: null, regionIndex: null };
+function _clampMapOffset() {
+  var canvas = document.getElementById('city-canvas');
+  if (!canvas) return;
+  var container = canvas.parentElement;
+  if (!container) return;
+  var w = container.clientWidth, h = container.clientHeight;
+  var cm = gameState.city_map;
+  if (!cm) return;
+  var size = cm.grid_size || 8;
+  var fitScale = Math.min(w / size, h / size);
+  var cellSize = fitScale * _mapView.scale;
+  var halfWorldWidth = size * cellSize / 2;
+  var halfWorldHeight = size * cellSize / 2;
+  var minX = halfWorldWidth - w / 2;
+  var maxX = w / 2 - halfWorldWidth;
+  var minY = halfWorldHeight - h / 2;
+  var maxY = h / 2 - halfWorldHeight;
+  _mapView.offsetX = Math.max(minX, Math.min(maxX, _mapView.offsetX));
+  _mapView.offsetY = Math.max(minY, Math.min(maxY, _mapView.offsetY));
+}
 var _mapRegionNames = { ocean: '🌊海洋', mountain: '⛰️山脉', river: '🏞️河流', lake: '🌊湖泊', forest: '🌲森林', desert: '🏜️沙漠', swamp: '🪵沼泽', plain: '🌿平原', road: '🛣️道路', residential: '🏠居住区', commercial: '🏬商业区', industrial: '🏭工业区', suburb: '🌳郊外', transport: '🚉轨道与交通' };
 // 在本地将 landmark emoji 放置到对应区划/地形的随机格子上
 function _placeLandmarksLocally(baseGrid, districtGrid, landmarks, size) {
@@ -5389,6 +5409,7 @@ function _initMapCanvas() {
     _mapView.offsetX = mx - (mx - _mapView.offsetX) * (newScale / _mapView.scale);
     _mapView.offsetY = my - (my - _mapView.offsetY) * (newScale / _mapView.scale);
     _mapView.scale = newScale;
+    _clampMapOffset();
     _drawMapCanvas();
     return false;
   }, { passive: false });
@@ -5396,8 +5417,8 @@ function _initMapCanvas() {
     if (e.button !== 2) return;
     e.preventDefault();
     _mapView.dragging = true;
-    _mapView.dragStartX = e.clientX;
-    _mapView.dragStartY = e.clientY;
+    _mapView.dragStartX = e.pageX;
+    _mapView.dragStartY = e.pageY;
     _mapView.dragStartOX = _mapView.offsetX;
     _mapView.dragStartOY = _mapView.offsetY;
     canvas.style.cursor = 'grabbing';
@@ -5405,8 +5426,9 @@ function _initMapCanvas() {
   });
   canvas.addEventListener('mousemove', function (e) {
     if (_mapView.dragging) {
-      _mapView.offsetX = _mapView.dragStartOX + (e.clientX - _mapView.dragStartX);
-      _mapView.offsetY = _mapView.dragStartOY + (e.clientY - _mapView.dragStartY);
+      _mapView.offsetX = _mapView.dragStartOX + (e.pageX - _mapView.dragStartX);
+      _mapView.offsetY = _mapView.dragStartOY + (e.pageY - _mapView.dragStartY);
+      _clampMapOffset();
       _drawMapCanvas();
       if (tooltip) tooltip.style.display = 'none';
       return;
