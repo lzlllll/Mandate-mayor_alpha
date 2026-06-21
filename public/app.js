@@ -1251,7 +1251,10 @@ function detectCurrencySymbol(cityBg, cityName, era) {
     if (/法国|法兰西|巴黎/.test(text)) {
       return '₣';
     }
-    return '£'; // 西方案例
+    if (/英国|伦敦/.test(text)) {
+      return '£';
+    }
+    return '¤'; // 通用货币符号，不再默认使用英镑
   }
   // 近代/现代
   if (/蒸汽|工业|战后|民国|近代|现代|当代/.test(text)) {
@@ -1296,7 +1299,10 @@ function detectCurrencySymbol(cityBg, cityName, era) {
     if (/西班牙属/.test(text)) {
       return '₧';
     }
-    return '£'; // 英属殖民地
+    if (/英属|英国/.test(text)) {
+      return '£';
+    }
+    return '¤'; // 通用货币符号，不再默认使用英镑
   }
   // 根据城市名称做最后判断
   if (/中国|中华|北京|上海|广州|长安|洛阳|金陵|临安|汴京|成都|杭州|苏州|南京|武汉|西安|香港|澳门|台北/.test(text)) {
@@ -1324,7 +1330,10 @@ function detectCurrencySymbol(cityBg, cityName, era) {
     if (/巴黎|法国/.test(text)) {
       return '€';
     }
-    return '£';
+    if (/伦敦|英国/.test(text)) {
+      return '£';
+    }
+    return '¤'; // 通用货币符号，不再默认使用英镑
   }
   // 真正的默认（无任何背景信息时）使用通用货币符号
   return '¤';
@@ -3604,11 +3613,14 @@ function getProgressBar(value, opts) {
 function renderMacroCard() {
   const m = gameState.macro;
   const gr = parseFloat(m.growth_rate) || 0;
+  // 解析 currency_cpi 字段，只显示通胀部分
+  var cpiParsed = parseCurrencyCPI(m.currency_cpi);
+  var inflationDisplay = cpiParsed.inflation || '-';
   const items = [
     ['📊 GDP', m.gdp, 'font-bold text-[#8b5a2b]', null],
     ['📈 增长', m.growth_rate, gr >= 0 ? 'text-emerald-600' : 'text-red-600', { reversed: gr < 0 }],
     ['💼 失业', m.unemployment, (parseFloat(m.unemployment) || 0) > 5 ? 'text-red-600' : 'text-emerald-600', { reversed: true }],
-    ['💰 货币/通胀', m.currency_cpi, '', null],
+    ['💰 货币/通胀', inflationDisplay, '', null],
     ['🏦 外债', m.debt, '', null],
     ['💧 流动/外汇', m.liquid_fx, '', null],
     ['⚖️ 基尼系数', m.gini, (parseFloat(m.gini) || 0) > 0.45 ? 'text-red-600' : '', { reversed: true }],
@@ -6210,11 +6222,39 @@ function getCurrencySymbol() {
   // 从 currency_cpi (如 "GBP|2.5%") 或 liquid_fx (如 "£5000万/£2000万") 提取货币符号
   var cpi = (gameState.macro.currency_cpi || '');
   var parts = cpi.split('|');
-  if (parts[0] && parts[0].trim()) return parts[0].trim();
+  // 检查第一部分是否是纯货币代码（不含数字和单位）
+  if (parts[0] && parts[0].trim() && !/\d|万|亿/.test(parts[0])) return parts[0].trim();
   var fx = (gameState.macro.liquid_fx || '');
   var m = fx.match(/^[^\d\s]+/);
   if (m) return m[0];
   return '';
+}
+
+function parseCurrencyCPI(cpiStr) {
+  // 解析 currency_cpi 字段，返回 { currency: '货币代码', inflation: '通胀率' }
+  // 格式可能是: "GBP|2.5%" 或 "£5000万|2.5%" 或 "2.5%"
+  if (!cpiStr) return { currency: '', inflation: '' };
+  var parts = cpiStr.split('|');
+  if (parts.length >= 2) {
+    // 第一部分是货币信息
+    var firstPart = parts[0].trim();
+    // 如果第一部分包含数字或单位，则只提取通胀部分
+    if (/\d|万|亿/.test(firstPart)) {
+      return { currency: '', inflation: parts[1].trim() };
+    }
+    return { currency: firstPart, inflation: parts[1].trim() };
+  }
+  // 没有 | 分隔符，可能只是通胀率或格式异常
+  // 检查是否包含 %
+  if (/%/.test(cpiStr)) {
+    return { currency: '', inflation: cpiStr.trim() };
+  }
+  // 检查是否包含数字和单位（财政数据混入）
+  if (/\d.*万|\d.*亿/.test(cpiStr)) {
+    // 这是一个财政数据，不是通胀数据，返回空
+    return { currency: '', inflation: '' };
+  }
+  return { currency: '', inflation: cpiStr.trim() };
 }
 
 function formatTradeValue(val, options) {
