@@ -3614,7 +3614,7 @@ ENDMAP
           if (/法国|法兰西|巴黎/.test(text)) {
             return '₣';
           }
-          return '£'; // 西方案例
+          return '¤'; // 西方案例
         }
         // 近代/现代
         if (/蒸汽|工业|战后|民国|近代|现代|当代/.test(text)) {
@@ -3687,7 +3687,7 @@ ENDMAP
           if (/巴黎|法国/.test(text)) {
             return '€';
           }
-          return '£';
+          return '¤';
         }
         // 真正的默认（无任何背景信息时）使用通用货币符号
         return '¤';
