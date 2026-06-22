@@ -147,6 +147,50 @@ news含4源，各有固定名称和风格。**news不在输入中发送上轮值
 6. 禁写成爽文，须有代价/副作用/阻力。
 7. 禁制造死局，确保玩家有挽救空间。
 
+# 数字格式规范（严格遵守，每回合自检）
+⚠️ 所有非描述性数据型字段：单条文字≤10字，优先数字，禁止记录历史变化！
+正确示例: "infra_health":"85"、"growth_rate":"3.5"、"opinion":"68%"、"status":"执行中"
+错误示例: "infra_health":"良好"、"growth_rate":"中等偏上尚可"、"[从65%涨至72%]"、"status":"该政策已经进入全面执行阶段中"
+硬性要求（每回合输出前必须自检）：
+1. 数字类字段必须返回纯数字字符串。
+2. 文字类字段若无法避免描述，单条字段值长度≤10个汉字或字符。
+3. **当前状态原则**：字段只记录"当前状态/当前值"，禁止记录历史变化过程（如禁止写"从X涨到Y"、"较上轮+5"、"曾执行过"等）。
+4. 优先使用"数字+单位"格式（如"68%"、"320万"），其次才是≤10字短词。
+
+# 现行政策机制（重要，增量更新+删除列表）
+* 系统右侧"现行政策"面板会记录当前在执行的政策/机制，玩家和AI均可见。
+* 输入上下文中包含"active_policies"（当前政策快照）和"removed_policies"（已删除政策列表）。
+* **增量更新原则**：
+  - 政策未到期/未废除/未失败→在city.policies中**完整保留**并更新stage/effect/opinion/status。
+  - 政策内容变化（升档/降档/调整）→只更新变化字段，禁止重复全量。
+  - 每条政策字段: name(≤10字) | stage(≤10字) | effect(≤10字) | opinion(数字或"X%"，≤10字) | status(≤10字)。
+* **删除机制**：政策终止（到期/废除/失败/被取代）时：
+  1. 从city.policies数组中移除该政策；
+  2. **同时**在额外返回块===removed_policies===中列出被删除政策的完整记录。
+* 输出格式：
+===removed_policies===
+[{"name":"原政策名","reason":"≤10字删除原因","ended_at":"游戏时间"}]
+===end===
+
+# 通用增量更新+删除列表机制（适用所有按name增量更新的数组字段）
+以下数组字段采用"按name增量更新"机制：facilities(经济设施)、exports(出口)、imports(进口)、classes(阶级)、districts(行政区)、departments(政府部门)、projects(项目)、council.groups(议会派系)、fiscal.expense_items(支出项)、fiscal.income_items(收入项)。
+* **保留原则**：默认情况下，旧项**必须保留**在数组中。新项不存在的旧项视为"继续存在"，不要无故删除。
+* **更新**：新项中存在同名项→更新其字段（局部更新，禁止全量重发）。
+* **新增**：新项中存在的全新name→添加到数组。
+* **删除**：仅当某项"明确消失/废弃/被合并/不再存在"时→从数组移除，**同时**在对应顶层字段记录删除内容：
+  - ===removed_facilities=== [{"name":"","reason":"≤10字"}]
+  - ===removed_exports=== [{"name":"","reason":"≤10字"}]
+  - ===removed_imports=== [{"name":"","reason":"≤10字"}]
+  - ===removed_classes=== [{"name":"","reason":"≤10字"}]
+  - ===removed_districts=== [{"name":"","reason":"≤10字"}]
+  - ===removed_departments=== [{"name":"","reason":"≤10字"}]
+  - ===removed_projects=== [{"name":"","reason":"≤10字"}]
+  - ===removed_council_groups=== [{"name":"","reason":"≤10字"}]
+  - ===removed_expense_items=== [{"name":"","reason":"≤10字"}]
+  - ===removed_income_items=== [{"name":"","reason":"≤10字"}]
+* reason字段说明删除原因，≤10字汉字/字符。无删除时**省略**对应块。
+* 每个removed_xxx块在顶层JSON中作为数组返回（系统会自动合并到gameState中相应历史字段）。
+
 # 思维链（9步→JSON）
 1.解析指令：拆解为可量化行动项。
 2.评估可行性：逐项检查资金/技术/政治/外部条件→可行/需代价/不可行。
@@ -160,10 +204,87 @@ news含4源，各有固定名称和风格。**news不在输入中发送上轮值
 
 # 输出要求
 * narrative≥1000字，小说文风，第三人称，含场景/NPC对话/代价。禁AI替玩家决策/建议。自然分段，用</p><p>分隔每个段落。
-* 简体中文。有效JSON，\`\`\`json\`\`\`代码块。narrative用多个<p class='text-gray-800 leading-relaxed'>标签分段。
+* 简体中文。使用块标记协议格式输出，每个数据块用===块名===和===end===包裹。narrative用多个<p class='text-gray-800 leading-relaxed'>标签分段。
 * 仅输出本轮变化字段，未变化字段省略（节省token）。
 
-# JSON格式
+# 块标记协议格式（优先使用）
+===header===
+{"time":"年月日时分星期","location":"","place":"","plot":"","weather":""}
+===end===
+
+===narrative===
+<p class='text-gray-800 leading-relaxed'>第一段...</p><p class='text-gray-800 leading-relaxed'>第二段...</p><p class='text-gray-800 leading-relaxed'>第三段...</p>
+===end===
+
+===macro===
+{"liquid_fx":"£","debt":"£","infra_health":"%","gdp":"£","growth_rate":"%","currency_cpi":"","unemployment":"%","gini":"","income_mode":"£","dependency":"%","security":"","political_stability":"%","execution_efficiency":"%"}
+===end===
+
+===demo===
+{"population":"","growth_rate":"","health":"","mortality":"","education":"","ethnicity":"","religion":""}
+===end===
+
+===land===
+{"area":"","admin_level":"","climate":"","geography":"","power":"","water":"","heating":"","traffic":"","pollution":""}
+===end===
+
+===econ===
+{"facilities":[{"id":"","type":"","employees":"","cost":"","status":"","revenue":""}],"exports":[{"name":"","type":"","volume":"货运量","value":"贸易额","tax":"","tag":""}],"imports":[同exports],"classes":[{"name":"","pop_pct":"","income":"","demand":"","satisfaction":"","global_rank":""}]}
+===end===
+
+===fiscal===
+{"total_expense":"£","expense_items":[{"name":"","type":"","amount":"£","status":""}],"total_income":"£","income_items":[{"name":"","type":"","amount":"£","status":""}]}
+===end===
+
+===admin===
+{"districts":[{"name":"","location":"","governance":""}],"departments":[{"name":"","function":"","head":""}],"projects":[{"name":"","stage":"","cost":"£","progress":"%"}],"civil_servants":"","admin_load":"%","corruption":"%"}
+===end===
+
+===council===
+{"groups":[{"name":"","type":"","support":"%","influence":"","demand":"","seats":"","risk":""}]}
+===end===
+
+===city===
+{"face":"","geo_text":"","election":"","housing":"","culture":"","policies":[{"name":"","stage":"","effect":"","opinion":"%","status":""}]}
+===end===
+
+===city_map===
+{"grid_size":${mapGridSize},"regions":[],"districts":[],"landmarks":[],"legend":{}}
+===end===
+
+===npc===
+[{"name":"","gender":"","role":"","expression":"","appearance":"","personality":"","background":"","stance":"","action":"","relation":""}]
+===end===
+
+===mayor===
+{"name":"","age":"","gender":"","faction":"","reputation":"","integrity":"","energy":"","skills":"","background":"","schedule":[{"time":"","location":"","event":""}]}
+===end===
+
+===news===
+{"city_official":{"media":"","date":"","edition":"","title":"","body":"70字"},"foreign":{"media":"","date":"","edition":"","title":"","body":"70字"},"social":{"media":"","date":"","edition":"","title":"","body":"90字","secretary_note":""},"radio":{"media":"","time":"","program_name":"","body":"150字"}}
+===end===
+
+===notes===
+[]
+===end===
+
+===secretary_reminder===
+""
+===end===
+
+===turn_summary===
+"80-150字总结"
+===end===
+
+===next_actions===
+["4项具体行动"]
+===end===
+
+===game_over===
+false
+===end===
+
+# JSON格式（备用）
 {
   "header":{"time":"年月日时分星期","location":"","place":"","plot":"","weather":""},
   "narrative":"<p class='text-gray-800 leading-relaxed'>第一段...</p><p class='text-gray-800 leading-relaxed'>第二段...</p><p class='text-gray-800 leading-relaxed'>第三段...</p>",
@@ -255,6 +376,7 @@ ENDMAP
 const DEFAULT_STATE = {
   header: { time: "等待生成...", location: "等待生成...", place: "等待生成...", plot: "等待AI生成初始城市", weather: "⏳" },
   narrative: "<p class='text-gray-400 text-center py-8'>🏗️ 正在等待AI生成城市初始数据...</p>",
+  policy_history: [],
   macro: { liquid_fx: "-", debt: "-", infra_health: "-", gdp: "-", growth_rate: "-", currency_cpi: "-", unemployment: "-", gini: "-", income_mode: "-", dependency: "-", security: "-", political_stability: "-", execution_efficiency: "-" },
   demo: { population: "-", growth_rate: "-", health: "-", mortality: "-", education: "-", ethnicity: "-", religion: "-" },
   land: { area: "-", admin_level: "-", climate: "-", geography: "-", power: "-", water: "-", heating: "-", traffic: "-", pollution: "-" },
@@ -607,6 +729,28 @@ function serializePartialState(categories) {
   // 顶层字段始终包含
   topLevel.forEach(function (f) {
     if (gameState[f] !== undefined) partial[f] = JSON.parse(JSON.stringify(gameState[f]));
+  });
+  // 现行政策始终包含：作为独立顶层字段，避免AI遗忘
+  var activePolicies = (gameState.city && gameState.city.policies) || [];
+  if (activePolicies.length > 0) {
+    partial.active_policies = JSON.parse(JSON.stringify(activePolicies));
+  }
+  // 已删除政策历史：让AI了解哪些政策被终止
+  var policyHistory = gameState.policy_history || [];
+  if (policyHistory.length > 0) {
+    partial.removed_policies = JSON.parse(JSON.stringify(policyHistory));
+  }
+  // 已删除通用数组项历史
+  var genericHistoryFields = [
+    'facilities_history', 'exports_history', 'imports_history', 'classes_history',
+    'districts_history', 'departments_history', 'projects_history', 'council_groups_history',
+    'expense_items_history', 'income_items_history'
+  ];
+  genericHistoryFields.forEach(function (field) {
+    var arr = gameState[field];
+    if (Array.isArray(arr) && arr.length > 0) {
+      partial[field] = JSON.parse(JSON.stringify(arr));
+    }
   });
   // 按类别选择性包含
   if (categories.indexOf('macro') !== -1) { partial.macro = {}; DATA_CATEGORIES.macro.fields.forEach(function (f) { if (gameState.macro && gameState.macro[f] !== undefined) partial.macro[f] = gameState.macro[f]; }); }
@@ -1982,10 +2126,15 @@ function isFiscalItemInvalid(item) {
   }
   return false;
 }
-function mergeFiscalItems(oldItems, newItems) {
+function mergeFiscalItems(oldItems, newItems, historyKey, removedList) {
   if (!Array.isArray(newItems)) return oldItems || [];
   if (!Array.isArray(oldItems)) return newItems;
-  // 结果数组：先保留未失效的旧条目
+  removedList = Array.isArray(removedList) ? removedList : [];
+  var removedNames = {};
+  removedList.forEach(function (r) {
+    if (r && r.name) removedNames[r.name] = r;
+  });
+  // 结果数组：先保留未失效的旧条目（除非显式声明删除）
   var result = [];
   var oldMap = {}; // name -> item 映射
   for (var i = 0; i < oldItems.length; i++) {
@@ -1993,6 +2142,20 @@ function mergeFiscalItems(oldItems, newItems) {
     if (!oldItem) continue;
     var name = oldItem.name || '';
     if (name) oldMap[name] = oldItem;
+    // 如果在 removedList 中声明为删除 → 归档并跳过
+    if (name && removedNames[name]) {
+      if (historyKey) {
+        if (!Array.isArray(gameState[historyKey])) gameState[historyKey] = [];
+        var currentTime = (gameState.header && gameState.header.time) || '';
+        var meta = removedNames[name] || {};
+        var archived = Object.assign({}, oldItem, {
+          _removed_at: meta.ended_at || currentTime,
+          _reason: meta.reason || ''
+        });
+        gameState[historyKey].push(archived);
+      }
+      continue;
+    }
     // 保留未失效的旧条目
     if (!isFiscalItemInvalid(oldItem)) {
       result.push(oldItem);
@@ -2004,6 +2167,8 @@ function mergeFiscalItems(oldItems, newItems) {
     if (!newItem) continue;
     var newName = newItem.name || '';
     if (!newName) continue;
+    // 跳过被显式声明为删除的项
+    if (removedNames[newName]) continue;
     // 检查是否已存在同名条目
     var existingIdx = -1;
     for (var k = 0; k < result.length; k++) {
@@ -2063,6 +2228,57 @@ function mergeNPCs(oldNPCs, newNPCs) {
 function mergeState(newData) {
   if (!newData || typeof newData !== 'object') return;
 
+  // 处理 removed_policies：追加到 gameState.policy_history（永久记录）
+  if (newData.removed_policies !== undefined) {
+    var removedList = [];
+    if (Array.isArray(newData.removed_policies)) {
+      removedList = newData.removed_policies;
+    } else if (typeof newData.removed_policies === 'string') {
+      try { removedList = JSON.parse(newData.removed_policies); } catch (e) { removedList = []; }
+    }
+    if (removedList && removedList.length > 0) {
+      if (!Array.isArray(gameState.policy_history)) gameState.policy_history = [];
+      removedList.forEach(function (rp) {
+        if (rp && rp.name) {
+          gameState.policy_history.push({
+            name: rp.name,
+            reason: rp.reason || '',
+            ended_at: rp.ended_at || (gameState.header && gameState.header.time) || '',
+            stage: rp.stage || '',
+            effect: rp.effect || '',
+            status: rp.status || ''
+          });
+        }
+      });
+    }
+  }
+
+  // 处理通用 removed_xxx：追加到 gameState 对应 _history 字段（永久记录）
+  var genericRemovedFields = [
+    'removed_facilities', 'removed_exports', 'removed_imports', 'removed_classes',
+    'removed_districts', 'removed_departments', 'removed_projects', 'removed_council_groups',
+    'removed_expense_items', 'removed_income_items'
+  ];
+  genericRemovedFields.forEach(function (field) {
+    if (newData[field] === undefined) return;
+    var histField = field.replace('removed_', '') + '_history';
+    var list = [];
+    if (Array.isArray(newData[field])) {
+      list = newData[field];
+    } else if (typeof newData[field] === 'string') {
+      try { list = JSON.parse(newData[field]); } catch (e) { list = []; }
+    }
+    if (list && list.length > 0) {
+      if (!Array.isArray(gameState[histField])) gameState[histField] = [];
+      var curTime = (gameState.header && gameState.header.time) || '';
+      list.forEach(function (item) {
+        if (item && item.name) {
+          gameState[histField].push(Object.assign({}, item, { _removed_at: item.ended_at || curTime }));
+        }
+      });
+    }
+  });
+
   // 深度合并 header，只合并非空属性
   if (newData.header && typeof newData.header === 'object') {
     Object.keys(newData.header).forEach(function (key) {
@@ -2110,10 +2326,10 @@ function mergeState(newData) {
     if (newData.fiscal.total_income != null && !isEmpty(newData.fiscal.total_income)) gameState.fiscal.total_income = newData.fiscal.total_income;
     // 增量更新：合并新旧条目，保留未失效的旧条目
     if (newData.fiscal.expense_items && Array.isArray(newData.fiscal.expense_items)) {
-      gameState.fiscal.expense_items = mergeFiscalItems(gameState.fiscal.expense_items || [], newData.fiscal.expense_items);
+      gameState.fiscal.expense_items = mergeFiscalItems(gameState.fiscal.expense_items || [], newData.fiscal.expense_items, 'expense_items_history', newData.removed_expense_items);
     }
     if (newData.fiscal.income_items && Array.isArray(newData.fiscal.income_items)) {
-      gameState.fiscal.income_items = mergeFiscalItems(gameState.fiscal.income_items || [], newData.fiscal.income_items);
+      gameState.fiscal.income_items = mergeFiscalItems(gameState.fiscal.income_items || [], newData.fiscal.income_items, 'income_items_history', newData.removed_income_items);
     }
   }
 
@@ -2138,7 +2354,9 @@ function mergeState(newData) {
     if (newData.city.election && !isEmpty(newData.city.election)) gameState.city.election = newData.city.election;
     if (newData.city.housing && !isEmpty(newData.city.housing)) gameState.city.housing = newData.city.housing;
     if (newData.city.culture && !isEmpty(newData.city.culture)) gameState.city.culture = newData.city.culture;
-    if (newData.city.policies && Array.isArray(newData.city.policies) && newData.city.policies.length > 0) gameState.city.policies = newData.city.policies;
+    if (newData.city.policies !== undefined && Array.isArray(newData.city.policies)) {
+      gameState.city.policies = newData.city.policies;
+    }
   }
 
   if (newData.city_map && !isEmpty(newData.city_map)) mergeCityMap(newData.city_map);
@@ -5266,6 +5484,32 @@ function mergeMapLegend(newLegend) {
 var _mapView = { scale: 1, offsetX: 0, offsetY: 0, dragging: false, dragStartX: 0, dragStartY: 0, dragStartOX: 0, dragStartOY: 0 };
 var _mapCache = { size: 8, ox: 0, oy: 0, cellSize: 0, grid: null, iconMap: null, landmarks: null, regions: null, regionIndex: null };
 var _mapRegionNames = { ocean: '🌊海洋', mountain: '⛰️山脉', river: '🏞️河流', lake: '🌊湖泊', forest: '🌲森林', desert: '🏜️沙漠', swamp: '🪵沼泽', plain: '🌿平原', road: '🛣️道路', residential: '🏠居住区', commercial: '🏬商业区', industrial: '🏭工业区', suburb: '🌳郊外', transport: '🚉轨道与交通' };
+function _clampMapOffset() {
+  var canvas = document.getElementById('city-canvas');
+  if (!canvas) return;
+  var container = canvas.parentElement;
+  if (!container) return;
+  var w = container.clientWidth, h = container.clientHeight;
+  var cm = gameState.city_map;
+  if (!cm) return;
+  var size = cm.grid_size || 8;
+  var fitScale = Math.min(w / size, h / size);
+  var cellSize = fitScale * _mapView.scale;
+  var worldWidth = size * cellSize;
+  var worldHeight = size * cellSize;
+  var halfWorldWidth = worldWidth / 2;
+  var halfWorldHeight = worldHeight / 2;
+  var halfContainerWidth = w / 2;
+  var halfContainerHeight = h / 2;
+  var minX = halfContainerWidth - halfWorldWidth;
+  var maxX = halfWorldWidth - halfContainerWidth;
+  var minY = halfContainerHeight - halfWorldHeight;
+  var maxY = halfWorldHeight - halfContainerHeight;
+  if (minX > maxX) { var t = minX; minX = maxX; maxX = t; }
+  if (minY > maxY) { t = minY; minY = maxY; maxY = t; }
+  _mapView.offsetX = Math.max(minX, Math.min(maxX, _mapView.offsetX));
+  _mapView.offsetY = Math.max(minY, Math.min(maxY, _mapView.offsetY));
+}
 // 在本地将 landmark emoji 放置到对应区划/地形的随机格子上
 function _placeLandmarksLocally(baseGrid, districtGrid, landmarks, size) {
   var iconMap = {};
@@ -5373,6 +5617,7 @@ function _initMapCanvas() {
     _mapView.offsetX = mx - (mx - _mapView.offsetX) * (newScale / _mapView.scale);
     _mapView.offsetY = my - (my - _mapView.offsetY) * (newScale / _mapView.scale);
     _mapView.scale = newScale;
+    _clampMapOffset();
     _drawMapCanvas();
     return false;
   }, { passive: false });
@@ -5391,6 +5636,7 @@ function _initMapCanvas() {
     if (_mapView.dragging) {
       _mapView.offsetX = _mapView.dragStartOX + (e.clientX - _mapView.dragStartX);
       _mapView.offsetY = _mapView.dragStartOY + (e.clientY - _mapView.dragStartY);
+      _clampMapOffset();
       _drawMapCanvas();
       if (tooltip) tooltip.style.display = 'none';
       return;
@@ -5831,7 +6077,10 @@ function parseBlockProtocol(content) {
 
   console.warn('[parseBlockProtocol] 找到的块:', foundBlocks.join(', '));
 
-  const arrayBlocks = ['npc', 'notes', 'next_actions', 'turn_summary'];
+  const arrayBlocks = ['npc', 'notes', 'next_actions', 'turn_summary',
+    'removed_policies', 'removed_facilities', 'removed_exports', 'removed_imports', 'removed_classes',
+    'removed_districts', 'removed_departments', 'removed_projects', 'removed_council_groups',
+    'removed_expense_items', 'removed_income_items'];
   for (const block of arrayBlocks) {
     if (result[block] && typeof result[block] === 'string') {
       const trimmed = result[block].trim();
@@ -5992,6 +6241,8 @@ function ensureClosed(s) {
 
 function repairJSON(str) {
   var s = str;
+  // 0. 修复缺失的括号（AI经常遗漏外层或内层括号）
+  s = fixMissingBraces(s);
   // 1. 全角引号 → 半角引号（常见于中文AI输出）
   s = s.replace(/\u201C/g, '"').replace(/\u201D/g, '"');
   s = s.replace(/\u2018/g, "'").replace(/\u2019/g, "'");
@@ -6004,6 +6255,73 @@ function repairJSON(str) {
   s = fixUnescapedNewlines(s);
   // 5. 修复未闭合的字符串 — 只在明确检测到且不会破坏结构时执行
   s = fixUnterminatedStringsSafe(s);
+  return s;
+}
+
+// 修复缺失的括号
+function fixMissingBraces(s) {
+  var braceCount = 0;
+  var bracketCount = 0;
+  var inStr = false;
+  var escaped = false;
+  
+  // 统计括号平衡
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    
+    if (ch === '{') braceCount++;
+    else if (ch === '}') braceCount--;
+    else if (ch === '[') bracketCount++;
+    else if (ch === ']') bracketCount--;
+  }
+  
+  // 修复花括号
+  while (braceCount > 0) {
+    s += '}';
+    braceCount--;
+  }
+  while (braceCount < 0) {
+    s = '{' + s;
+    braceCount++;
+  }
+  
+  // 修复方括号
+  while (bracketCount > 0) {
+    s += ']';
+    bracketCount--;
+  }
+  while (bracketCount < 0) {
+    s = '[' + s;
+    bracketCount++;
+  }
+  
+  // 确保最外层是对象或数组
+  var trimmed = s.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    // 尝试找到第一个{或[
+    var firstBrace = trimmed.indexOf('{');
+    var firstBracket = trimmed.indexOf('[');
+    var startIdx = -1;
+    if (firstBrace >= 0 && firstBracket >= 0) {
+      startIdx = Math.min(firstBrace, firstBracket);
+    } else if (firstBrace >= 0) {
+      startIdx = firstBrace;
+    } else if (firstBracket >= 0) {
+      startIdx = firstBracket;
+    }
+    
+    if (startIdx >= 0) {
+      s = trimmed.substring(startIdx);
+    } else {
+      // 完全没有括号，尝试用大括号包裹
+      s = '{' + trimmed + '}';
+    }
+  }
+  
   return s;
 }
 
