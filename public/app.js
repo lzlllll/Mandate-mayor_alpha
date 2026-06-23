@@ -473,6 +473,7 @@ let popGrowthHistory = []; // [{month, rate}] 人口增长率历史（近5个月
 let pinnedNPCs = []; // [{name, age, job, trait, background, lastUpdate, dailyLog:[{day, text}]}]
 let npcLifeCandidates = []; // AI生成的候选底层NPC
 let _npcLifeLastDay = ''; // 上次更新日历（每天只更新一次）
+let _npcLifeLastMonth = ''; // 上次月度事件更新月份
 let broadcastContent = ''; // 当前广播内容
 let broadcastSegments = []; // 广播段落数组
 let _broadcastLastDay = ''; // 上次更新广播的时间
@@ -3022,6 +3023,7 @@ function saveGame() {
   localStorage.setItem('aic_pinnednpcs', JSON.stringify(pinnedNPCs));
   localStorage.setItem('aic_broadcast', JSON.stringify(broadcastSegments));
   localStorage.setItem('aic_npclastday', _npcLifeLastDay);
+  localStorage.setItem('aic_npclastmonth', _npcLifeLastMonth);
   localStorage.setItem('aic_broadcastlastday', _broadcastLastDay);
   if (refreshSnapshot) {
     var snap = { isOpening: !!refreshSnapshot.isOpening, messages: refreshSnapshot.messages || null, apiModel: refreshSnapshot.apiModel || '', appointmentText: refreshSnapshot.appointmentText || '' };
@@ -3097,6 +3099,7 @@ function loadGame() {
     broadcastSegments = JSON.parse(localStorage.getItem('aic_broadcast') || '[]');
   } catch (e) { broadcastSegments = []; }
   _npcLifeLastDay = localStorage.getItem('aic_npclastday') || '';
+  _npcLifeLastMonth = localStorage.getItem('aic_npclastmonth') || '';
   _broadcastLastDay = localStorage.getItem('aic_broadcastlastday') || '';
   try {
     var snapStr = localStorage.getItem('aic_refresh_snap');
@@ -3367,7 +3370,7 @@ function compressContext() {
     historyText += '\n# 短期记忆（最近回合）:\n';
     shortTermMemory.forEach(function (m, i) { historyText += '[' + i + '] 回合' + m.turn + '(' + m.time + '): ' + m.summary + '\n'; });
   }
-  var prompt = '你是城市模拟游戏的历史记录压缩器。以下是需要压缩的游戏历史记录。\n\n要求：\n1. 将每条完整历史记录压缩为≤200字的中文摘要，保留：关键决策、重要事件、数值变化趋势、NPC关系变化、派系动态。删除冗余描写和细节。\n2. 将长期记忆合并重写为更精炼的版本。\n3. 输出严格JSON格式：{"compressed_history":[{"turn":数字,"time":"时间","decision":"决策摘要","narrative":"200字内叙事摘要"}],"compressed_longterm":[{"startTurn":数字,"endTurn":数字,"summary":"精炼摘要"}],"compressed_shortterm":[{"turn":数字,"time":"时间","summary":"摘要"}]}\n4. compressed_history条数必须与原始fullHistory一一对应，不能遗漏或合并任何一轮。\n5. 只输出JSON，不要其他文字。\n\n待压缩数据：\n' + historyText;
+  var prompt = '你是城市模拟游戏的历史记录压缩器。以下是需要压缩的游戏历史记录。\n\n要求：\n1. 将每条完整历史记录压缩为≤200字的中文摘要，保留：关键决策、重要事件、数值变化趋势、NPC关系变化、派系动态。删除冗余描写和细节。\n2. 将长期记忆合并重写为更精炼的版本。\n3. 将短期记忆压缩为更简洁的版本。\n4. 输出严格JSON格式：{"compressed_longterm":[{"startTurn":数字,"endTurn":数字,"summary":"精炼摘要"}],"compressed_shortterm":[{"turn":数字,"time":"时间","summary":"摘要"}],"compressed_history_summaries":[{"turn":数字,"time":"时间","summary":"200字内摘要"}]}]\n5. 只输出JSON，不要其他文字。\n\n待压缩数据：\n' + historyText;
   logInfo('开始上下文压缩 历史轮数=' + fullHistory.length);
   fetch(c.url + '/chat/completions', {
     method: 'POST',
@@ -3381,23 +3384,19 @@ function compressContext() {
     var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('AI返回未找到JSON');
     var result = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-    if (result.compressed_history && result.compressed_history.length === fullHistory.length) {
-      fullHistory = result.compressed_history.map(function (ch, i) { return { turn: ch.turn || fullHistory[i].turn, time: ch.time || fullHistory[i].time, decision: ch.decision || fullHistory[i].decision, narrative: ch.narrative || '' }; });
-      logInfo('fullHistory 已压缩: ' + fullHistory.length + '轮');
-    }
     if (result.compressed_longterm && result.compressed_longterm.length > 0) {
       longTermMemory = result.compressed_longterm.map(function (cl) { return { startTurn: cl.startTurn, endTurn: cl.endTurn, summary: cl.summary }; });
       logInfo('longTermMemory 已压缩: ' + longTermMemory.length + '条');
     }
-    if (result.compressed_shortterm && result.compressed_shortterm.length === shortTermMemory.length) {
+    if (result.compressed_shortterm && result.compressed_shortterm.length > 0) {
       shortTermMemory = result.compressed_shortterm.map(function (cs) { return { turn: cs.turn, time: cs.time, summary: cs.summary }; });
       logInfo('shortTermMemory 已压缩: ' + shortTermMemory.length + '条');
     }
     saveGame();
     renderHistoryContent();
     var origTokens = estimateTokens(historyText);
-    var newTokens = estimateTokens(JSON.stringify(fullHistory) + JSON.stringify(longTermMemory) + JSON.stringify(shortTermMemory));
-    alert('✅ 上下文压缩完成！\n\n完整历史: ' + fullHistory.length + '轮\n长期记忆: ' + longTermMemory.length + '条\n短期记忆: ' + shortTermMemory.length + '条\n\n预估token节省: ≈' + Math.round((origTokens - newTokens) / origTokens * 100) + '%');
+    var newTokens = estimateTokens(JSON.stringify(longTermMemory) + JSON.stringify(shortTermMemory));
+    alert('✅ 上下文压缩完成！\n\n完整历史: ' + fullHistory.length + '轮(保持全文不变)\n长期记忆: ' + longTermMemory.length + '条\n短期记忆: ' + shortTermMemory.length + '条\n\n预估token节省: ≈' + Math.round((origTokens - newTokens) / origTokens * 100) + '%');
   }).catch(function (err) {
     console.error('压缩失败:', err);
     alert('❌ 压缩失败：' + err.message + '\n\n可能是API错误或返回格式不正确。');
@@ -3426,6 +3425,7 @@ function exportSaveFileInternal() {
     pinnedNPCs: pinnedNPCs,
     broadcastSegments: broadcastSegments,
     npcLifeLastDay: _npcLifeLastDay,
+    npcLifeLastMonth: _npcLifeLastMonth,
     broadcastLastDay: _broadcastLastDay
   };
   var blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
@@ -4431,6 +4431,130 @@ function closeNPClifeModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+function getMoodEmoji(mood) {
+  if (!mood) return '😐';
+  var moodLower = mood.toLowerCase();
+  if (moodLower.includes('开心') || moodLower.includes('高兴') || moodLower.includes('喜悦') || moodLower.includes('快乐') || moodLower.includes('幸福')) return '😊';
+  if (moodLower.includes('焦虑') || moodLower.includes('忧虑') || moodLower.includes('担心') || moodLower.includes('不安')) return '😰';
+  if (moodLower.includes('疲惫') || moodLower.includes('累') || moodLower.includes('疲倦')) return '😴';
+  if (moodLower.includes('难过') || moodLower.includes('悲伤') || moodLower.includes('伤心')) return '😢';
+  if (moodLower.includes('愤怒') || moodLower.includes('生气') || moodLower.includes('恼火')) return '😠';
+  if (moodLower.includes('期待') || moodLower.includes('希望') || moodLower.includes('憧憬')) return '🌟';
+  if (moodLower.includes('惊讶') || moodLower.includes('意外')) return '😲';
+  if (moodLower.includes('失望') || moodLower.includes('失落')) return '😞';
+  if (moodLower.includes('兴奋') || moodLower.includes('激动')) return '🎉';
+  if (moodLower.includes('平静') || moodLower.includes('平淡')) return '😐';
+  return '😐';
+}
+
+function getNPCNameStyle() {
+  var cityName = gameState.header.location || '';
+  var city = gameState.city || {};
+  var cityBackground = city.face || city.geo_text || '';
+  var eraHint = '';
+  var nameStyle = '';
+
+  var cityNameLower = cityName.toLowerCase();
+  var bgLower = cityBackground.toLowerCase();
+
+  var culturePatterns = [
+    { keywords: ['伦敦', '巴黎', '柏林', '罗马', '维也纳', '阿姆斯特丹', '布鲁塞尔', '马德里', '里斯本', '奥斯陆', '斯德哥尔摩', '哥本哈根', '赫尔辛基', '华沙', '布拉格', '布达佩斯', '雅典', '米兰', '威尼斯', '佛罗伦萨', '巴塞罗那', 'edinburgh', 'dublin', 'amsterdam', 'vienna', 'brussels', 'madrid', 'lisbon', 'stockholm', 'copenhagen', 'helsinki', 'warsaw', 'prague', 'budapest', 'athens', 'milan', 'venice', 'barcelona', 'london', 'paris', 'berlin', 'rome'], name: '欧洲姓名（如John Smith, Maria Garcia, Hans Mueller, Luca Rossi）', era: '欧洲城市' },
+    { keywords: ['纽约', '华盛顿', '芝加哥', '洛杉矶', '旧金山', '休斯顿', '费城', '凤凰城', 'san francisco', 'los angeles', 'chicago', 'new york', 'washington'], name: '欧美姓名（如Michael Johnson, Jennifer Williams, Robert Brown）', era: '美国城市' },
+    { keywords: ['东京', '大阪', '京都', '横滨', '名古屋', '神户', '福冈', '札幌', '仙台', '广岛', 'tokyo', 'osaka', 'kyoto', 'yokohama', 'nagoya', 'kobe', 'fukuoka', 'sapporo'], name: '日本姓名（如山田太郎、佐藤美雪、渡边健一）', era: '日本城市' },
+    { keywords: ['首尔', '釜山', '大邱', '仁川', '光州', '大田', '蔚山', 'seoul', 'busan', 'daegu', 'incheon', 'gwangju', 'daejeon', 'ulsan'], name: '韩国姓名（如金明洙、朴智妍、李在勋）', era: '韩国城市' },
+    { keywords: ['莫斯科', '圣彼得堡', '喀山', '叶卡捷琳堡', 'novosibirsk', 'moscow', 'st. petersburg', 'kazan', 'yekaterinburg'], name: '俄罗斯姓名（如伊万·彼得罗夫、安娜·伊万诺娃、谢尔盖·伊万诺夫）', era: '俄罗斯城市' },
+    { keywords: ['开罗', '亚历山大', 'cairo', 'alexandria'], name: '阿拉伯姓名（如穆罕默德·阿里、法蒂玛·哈桑）', era: '中东/北非城市' },
+    { keywords: ['孟买', '新德里', '加尔各答', 'bangalore', 'mumbai', 'delhi', 'calcutta'], name: '印度姓名（如拉吉夫·甘地、普里娅·辛格）', era: '印度城市' },
+    { keywords: ['悉尼', '墨尔本', '布里斯班', '珀斯', 'sydney', 'melbourne', 'brisbane', 'perth'], name: '澳洲姓名（如James Smith, Emily Wilson）', era: '澳大利亚城市' },
+    { keywords: ['巴西利亚', '圣保罗', '里约热内卢', 'sao paulo', 'rio de janeiro', 'brasilia'], name: '拉丁美洲姓名（如Carlos Silva, Maria Santos）', era: '拉丁美洲城市' },
+    { keywords: ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉', '西安', '重庆', '苏州', '天津', 'beijing', 'shanghai', 'guangzhou', 'shenzhen', 'hangzhou', 'nanjing', 'chengdu', 'wuhan', "xi'an", 'chongqing', 'suzhou', 'tianjin'], name: '中文姓名（如张伟、李娜、王磊）', era: '中国城市' }
+  ];
+
+  var styleMatched = false;
+  for (var i = 0; i < culturePatterns.length; i++) {
+    var cp = culturePatterns[i];
+    if (cp.keywords.some(function (k) { return cityName.includes(k) || cityNameLower.includes(k); })) {
+      nameStyle = cp.name;
+      eraHint = cp.era;
+      styleMatched = true;
+      break;
+    }
+  }
+
+  if (!styleMatched) {
+    if (bgLower.includes('欧洲') || bgLower.includes('地中海') || bgLower.includes('文艺复兴') ||
+      bgLower.includes('巴洛克') || bgLower.includes('罗马') || bgLower.includes('哥特') || bgLower.includes('中世纪') ||
+      bgLower.includes('骑士') || bgLower.includes('城堡') || bgLower.includes('viking') || bgLower.includes('norse')) {
+      nameStyle = '欧洲姓名（如Luca Rossi, Sophie Dubois, Emma Wilson, Lars Anderson）';
+      eraHint = '欧洲风格城市';
+    } else if (bgLower.includes('东方') || bgLower.includes('华夏') || bgLower.includes('大唐') ||
+      bgLower.includes('中原') || bgLower.includes('江南') || bgLower.includes('汉服') || bgLower.includes('紫禁城') ||
+      bgLower.includes('丝绸') || bgLower.includes('瓷器') || bgLower.includes('书法')) {
+      nameStyle = '中文姓名（如张伟、李娜、王磊、陈静）';
+      eraHint = '中国风格城市';
+    } else if (bgLower.includes('幕府') || bgLower.includes('武士') || bgLower.includes('茶道') ||
+      bgLower.includes('和服') || bgLower.includes('禅') || bgLower.includes('能剧') || bgLower.includes('浮世绘')) {
+      nameStyle = '日本姓名（如山田太郎、佐藤美雪、渡边健一）';
+      eraHint = '日本风格城市';
+    } else if (bgLower.includes('韩服') || bgLower.includes('泡菜') || bgLower.includes('韩剧') ||
+      bgLower.includes('世宗') || bgLower.includes('景福宫')) {
+      nameStyle = '韩国姓名（如金明洙、朴智妍、李在勋）';
+      eraHint = '韩国风格城市';
+    } else if (bgLower.includes('沙皇') || bgLower.includes('伏特加') || bgLower.includes('芭蕾') ||
+      bgLower.includes('西伯利亚') || bgLower.includes('克里姆林')) {
+      nameStyle = '俄罗斯姓名（如伊万·彼得罗夫、安娜·伊万诺娃）';
+      eraHint = '俄罗斯风格城市';
+    } else if (bgLower.includes('沙漠') || bgLower.includes('绿洲') || bgLower.includes('清真寺') ||
+      bgLower.includes('古兰经') || bgLower.includes('阿拉伯') || bgLower.includes('贝都因')) {
+      nameStyle = '阿拉伯姓名（如穆罕默德·阿里、法蒂玛·哈桑）';
+      eraHint = '中东风格城市';
+    } else if (bgLower.includes('泰姬陵') || bgLower.includes('恒河') || bgLower.includes('瑜伽') ||
+      bgLower.includes('咖喱') || bgLower.includes('宝莱坞')) {
+      nameStyle = '印度姓名（如拉吉夫·甘地、普里娅·辛格）';
+      eraHint = '印度风格城市';
+    } else if (/^[a-zA-Z\s]+$/.test(cityName.replace(/[.,!?'"]/g, ''))) {
+      nameStyle = '欧美姓名（如Michael Johnson, Jennifer Williams）';
+      eraHint = '欧美城市';
+    } else {
+      nameStyle = '中文姓名（如张伟、李娜、王磊）';
+      eraHint = '中国城市';
+    }
+  }
+
+  return { nameStyle: nameStyle, eraHint: eraHint };
+}
+
+function generateNPCs(count, existingNames) {
+  var c = getConfig();
+  if (!c.key) return;
+  var cityName = gameState.header.location || '这座城市';
+  var pop = (gameState.demo || {}).population || '数万';
+  var econ = gameState.econ || {};
+  var city = gameState.city || {};
+  var jobs = [];
+  if (econ.facilities) econ.facilities.forEach(function (f) { if (f.type) jobs.push(f.type); });
+  if (jobs.length === 0) jobs = ['工厂工人', '小商贩', '服务员', '清洁工', '出租车司机', '快递员', '摊贩', '保安', '建筑工人', '厨师', '售货员', '修理工'];
+  var cityBackground = city.face || city.geo_text || '';
+
+  var style = getNPCNameStyle();
+
+  var prompt = '你是城市社会学研究者，为以下城市生成' + count + '个新的底层市民档案。\n\n要求：\n1. **必须是底层普通市民**：工人、小贩、服务员、摊贩、保安、清洁工等，**绝对不能是官员、商人、贵族、名人**\n2. 每个人物：name(姓名)、age(年龄20-60)、job(职业)、trait(性格特征，如勤劳、乐观、焦虑等)、background(一句话背景故事)\n3. **姓名风格必须符合城市背景**：' + style.nameStyle + '\n4. **背景故事和职业必须符合城市设定**：' + style.eraHint + '\n5. **姓名必须与以下已有市民不同**：' + (existingNames || '') + '\n6. 每个人物的性格特征和背景要多样化，避免重复\n7. JSON数组格式：[{name,age,job,trait,background}]\n8. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop + '\n城市背景：' + cityBackground;
+
+  return fetch(c.url + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: c.model || 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 1500, stream: false })
+  }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) {
+      var text = (data.choices[0].message.content || '').trim();
+      var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\[[\s\S]*\])/);
+      if (!jsonMatch) throw new Error('未找到JSON');
+      var newNPCs = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      if (!Array.isArray(newNPCs) || newNPCs.length === 0) throw new Error('解析失败');
+      return newNPCs;
+    });
+}
+
 function renderNPCLifeList() {
   var el = document.getElementById('npc-life-content');
   var actions = document.getElementById('npc-life-modal-actions');
@@ -4445,6 +4569,8 @@ function renderNPCLifeList() {
     var latest = npc.dailyLog && npc.dailyLog.length > 0 ? npc.dailyLog[npc.dailyLog.length - 1] : null;
     var lastDay = latest ? latest.day : '尚未更新';
     var lastText = latest ? latest.text : '等待首日记录...';
+    var lastMood = latest ? latest.mood : '';
+    var moodEmoji = getMoodEmoji(lastMood);
     html += '<div class="bg-white rounded-lg p-3 border border-[#d35400]/20 shadow-sm">';
     html += '<div class="flex justify-between items-start mb-2">';
     html += '<div><p class="font-bold text-[#d35400]">' + npc.name + '</p><p class="text-xs text-gray-500">' + npc.job + ' · ' + npc.age + '岁 · ' + (npc.trait || '') + '</p></div>';
@@ -4452,12 +4578,16 @@ function renderNPCLifeList() {
     html += '<label class="flex items-center text-xs text-blue-600 cursor-pointer"><input type="checkbox" class="npc-refresh-cb mr-1" value="' + idx + '"' + (npc.pendingRefresh ? ' checked' : '') + '>下回合换人</label>';
     html += '<button onclick="removePinnedNPC(' + idx + ')" class="text-gray-400 hover:text-red-500 text-xs px-1">✕</button>';
     html += '</div></div>';
-    html += '<p class="text-[10px] text-gray-400 mb-1">📅 ' + lastDay + '</p>';
+    html += '<p class="text-[10px] text-gray-400 mb-1">📅 ' + lastDay + ' ' + moodEmoji + (lastMood ? ' ' + lastMood : '') + '</p>';
     html += '<p class="text-sm text-gray-700 leading-relaxed">' + lastText + '</p>';
+    if (npc.background) {
+      html += '<p class="text-xs text-gray-400 mt-1 italic">背景：' + npc.background + '</p>';
+    }
     if (npc.dailyLog && npc.dailyLog.length > 3) {
       html += '<details class="mt-2"><summary class="text-xs text-gray-400 cursor-pointer">查看历史(' + (npc.dailyLog.length - 1) + '条)</summary>';
       npc.dailyLog.slice(0, -1).reverse().forEach(function (log) {
-        html += '<p class="text-xs text-gray-400 mt-1"><span class="font-semibold">' + log.day + ':</span> ' + log.text + '</p>';
+        var logMoodEmoji = getMoodEmoji(log.mood);
+        html += '<p class="text-xs text-gray-400 mt-1"><span class="font-semibold">' + log.day + ':</span> ' + logMoodEmoji + ' ' + log.text + '</p>';
       });
       html += '</details>';
     }
@@ -4502,70 +4632,116 @@ function updatePinnedNPCDaily() {
   var dayMatch = gameTime.match(/(\d+)年(\d+)月(\d+)日/);
   if (!dayMatch) return;
   var today = dayMatch[1] + '年' + dayMatch[2] + '月' + dayMatch[3] + '日';
+  var currentMonth = dayMatch[1] + '-' + ('0' + dayMatch[2]).slice(-2);
   if (_npcLifeLastDay === today) return;
   _npcLifeLastDay = today;
+
   var needsRefresh = pinnedNPCs.filter(function (n) { return n.pendingRefresh; });
   var needsDailyUpdate = pinnedNPCs.filter(function (n) { return !n.pendingRefresh; });
   var macro = gameState.macro || {};
   var city = gameState.city || {};
+
+  var refreshPromise = Promise.resolve();
+  if (needsRefresh.length > 0) {
+    var existingNames = pinnedNPCs.map(function (n) { return n.name; }).join('、');
+    refreshPromise = generateNPCs(needsRefresh.length, existingNames).then(function (newNPCs) {
+      needsRefresh.forEach(function (npc, idx) {
+        if (newNPCs[idx]) {
+          npc.name = newNPCs[idx].name;
+          npc.age = newNPCs[idx].age;
+          npc.job = newNPCs[idx].job;
+          npc.trait = newNPCs[idx].trait || '';
+          npc.background = newNPCs[idx].background || '';
+          npc.pendingRefresh = false;
+          npc.dailyLog = [];
+        }
+      });
+      saveGame();
+      renderNPCLifeList();
+    }).catch(function (err) { console.warn('NPC刷新生成失败:', err); });
+  }
+
   if (needsDailyUpdate.length > 0) {
-    var npcNames = needsDailyUpdate.map(function (n) { return n.name + '(' + n.job + ')'; }).join('、');
-    var prompt = '你是底层市民生活的观察者，描述以下普通市民今天的日常生活片段。\n\n要求：\n1. 为每个人物生成100字以内的生活片段，描写他们今天的普通生活\n2. **只描写普通市民的日常生活**：早餐、上班路上的见闻、工作内容、下班后的活动等\n3. **可以隐晦地**反映玩家决策带来的影响（如"今天物价涨了，买菜多花了不少钱"而非"因为税收政策..."），但比例控制在10%以内\n4. 每个片段用|分隔，顺序对应人物列表\n5. 语言朴实自然，像真实的人物日记\n6. **绝对不要**写成官员、商人或名人的视角\n\n人物：' + npcNames + '\n城市：' + (gameState.header.location || '') + '\n时间：' + gameTime + '\n当前城市状态（仅供隐晦参考）：' + '\n经济：' + (macro.growth_rate || '正常') + '，' + (macro.unemployment || '') + '\n社会：' + (city.housing || '稳定');
-    fetch(c.url + '/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: c.model || 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 1500, stream: false })
-    }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (data) {
-        var text = (data.choices[0].message.content || '').trim();
-        var segments = text.split('|').map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; });
-        if (segments.length > 0) {
+    refreshPromise.then(function () {
+      var npcDetails = needsDailyUpdate.map(function (n) {
+        return { name: n.name, job: n.job, trait: n.trait, background: n.background };
+      });
+
+      var prompt = '你是底层市民生活的观察者，为以下普通市民生成今天的日常生活片段。\n\n要求：\n1. 为每个人物生成100-150字的生活片段，描写他们今天的普通生活\n2. **只描写普通市民的日常生活**：早餐、上班路上的见闻、工作内容、下班后的活动、与家人的互动等\n3. **结合人物性格特征**进行描写，如"勤劳的人"会早起，"焦虑的人"会担心物价\n4. **可以隐晦地**反映城市状态带来的影响（如"今天物价涨了，买菜多花了不少钱"），但比例控制在20%以内\n5. 每个片段包含mood字段，表示人物今日心情（开心、平静、焦虑、疲惫、期待等）\n6. 语言朴实自然，像真实的人物日记或生活记录\n7. **绝对不要**写成官员、商人或名人的视角\n8. JSON数组格式：[{name,text,mood}]\n9. 只输出JSON，不要其他文字\n\n人物：' + JSON.stringify(npcDetails) + '\n城市：' + (gameState.header.location || '') + '\n时间：' + gameTime + '\n当前城市状态（仅供隐晦参考）：\n经济：GDP增长率=' + (macro.growth_rate || '正常') + '，失业率=' + (macro.unemployment || '') + '\n民生：住房=' + (city.housing || '稳定') + '，安全=' + (macro.security || '良好') + '\n政策：' + ((city.policies || []).slice(0, 3).map(function (p) { return p.name; }).join('、') || '无');
+
+      fetch(c.url + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: c.model || 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 2000, stream: false })
+      }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (data) {
+          var text = (data.choices[0].message.content || '').trim();
+          var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\[[\s\S]*\])/);
+          if (!jsonMatch) throw new Error('未找到JSON');
+          var results = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+          if (!Array.isArray(results) || results.length === 0) throw new Error('解析失败');
+
           needsDailyUpdate.forEach(function (npc, idx) {
-            if (segments[idx]) {
-              npc.dailyLog.push({ day: today, text: segments[idx] });
+            var result = results.find(function (r) { return r.name === npc.name; }) || results[idx];
+            if (result && result.text) {
+              npc.dailyLog.push({ day: today, text: result.text, mood: result.mood || '平静' });
               if (npc.dailyLog.length > 30) npc.dailyLog.shift();
             }
           });
           saveGame();
           renderNPCLifeList();
-        }
-      }).catch(function (err) { console.warn('NPC每日更新失败:', err); });
+        }).catch(function (err) { console.warn('NPC每日更新失败:', err); });
+    });
   }
-  if (needsRefresh.length > 0) {
-    var cityName = gameState.header.location || '这座城市';
-    var pop = (gameState.demo || {}).population || '数万';
-    var econ = gameState.econ || {};
-    var jobs = [];
-    if (econ.facilities) econ.facilities.forEach(function (f) { if (f.type) jobs.push(f.type); });
-    if (jobs.length === 0) jobs = ['工厂工人', '小商贩', '服务员', '清洁工', '出租车司机', '快递员', '摊贩', '保安'];
-    var existingNames = pinnedNPCs.map(function (n) { return n.name; }).join('、');
-    var prompt = '你是城市社会学研究者，为以下观察槽位生成' + needsRefresh.length + '个新的底层市民档案。\n\n要求：\n1. **必须是底层普通市民**：工人、小贩、服务员、摊贩、保安、清洁工等，**绝对不能是官员、商人、贵族、名人**\n2. 每个人物：name(姓名)、age(年龄20-60)、job(职业)、trait(性格特征)、background(一句话背景)\n3. **姓名必须与以下已有市民不同**：' + existingNames + '\n4. JSON数组：[{name,age,job,trait,background}]\n5. 只输出JSON\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop;
-    fetch(c.url + '/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: c.model || 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 1200, stream: false })
-    }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (data) {
-        var text = (data.choices[0].message.content || '').trim();
-        var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\[[\s\S]*\])/);
-        if (!jsonMatch) throw new Error('未找到JSON');
-        var newNPCs = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-        if (!Array.isArray(newNPCs) || newNPCs.length === 0) throw new Error('解析失败');
-        needsRefresh.forEach(function (npc, idx) {
-          if (newNPCs[idx]) {
-            npc.name = newNPCs[idx].name;
-            npc.age = newNPCs[idx].age;
-            npc.job = newNPCs[idx].job;
-            npc.trait = newNPCs[idx].trait || '';
-            npc.background = newNPCs[idx].background || '';
-            npc.pendingRefresh = false;
-            npc.dailyLog = [];
+
+  if (_npcLifeLastMonth !== currentMonth) {
+    _npcLifeLastMonth = currentMonth;
+    refreshPromise.then(function () {
+      updateNPCMonthlyEvents();
+    });
+  }
+}
+
+function updateNPCMonthlyEvents() {
+  if (pinnedNPCs.length === 0) return;
+  var c = getConfig();
+  if (!c.key) return;
+  var gameTime = gameState.header.time || '';
+  var macro = gameState.macro || {};
+  var city = gameState.city || {};
+
+  var npcDetails = pinnedNPCs.map(function (n) {
+    var recentLogs = n.dailyLog.slice(-7);
+    return { name: n.name, job: n.job, trait: n.trait, background: n.background, recentDays: recentLogs.map(function (l) { return l.text; }).join(' ') };
+  });
+
+  var prompt = '你是城市生活观察者，为以下市民生成月度生活变化。\n\n要求：\n1. 为每个人物生成一个本月发生的重要生活事件或变化（升职、失业、搬家、家庭变故、遇到机遇等）\n2. 事件要符合人物的职业、性格和背景设定\n3. 事件可以反映城市政策或经济变化带来的影响\n4. 每个事件包含：event(事件描述，100字以内)、impact(对人物的影响，正面/负面/中性)、new_status(人物新状态描述)\n5. JSON数组格式：[{name,event,impact,new_status}]\n6. 只输出JSON，不要其他文字\n\n人物：' + JSON.stringify(npcDetails) + '\n城市：' + (gameState.header.location || '') + '\n时间：' + gameTime + '\n本月城市变化：\n经济：GDP=' + (macro.gdp || '') + '，增长率=' + (macro.growth_rate || '') + '\n民生：失业率=' + (macro.unemployment || '') + '，住房=' + (city.housing || '') + '\n政策变化：' + ((city.policies || []).slice(-3).map(function (p) { return p.name; }).join('、') || '无');
+
+  fetch(c.url + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: c.model || 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 2000, stream: false })
+  }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) {
+      var text = (data.choices[0].message.content || '').trim();
+      var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\[[\s\S]*\])/);
+      if (!jsonMatch) throw new Error('未找到JSON');
+      var results = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      if (!Array.isArray(results) || results.length === 0) throw new Error('解析失败');
+
+      pinnedNPCs.forEach(function (npc) {
+        var result = results.find(function (r) { return r.name === npc.name; });
+        if (result) {
+          npc.background = result.new_status || npc.background;
+          var monthEvent = result.event || '';
+          if (monthEvent) {
+            npc.dailyLog.push({ day: gameTime + ' [月度事件]', text: '📅 ' + monthEvent + ' (' + result.impact + ')', mood: result.impact === '正面' ? '开心' : result.impact === '负面' ? '难过' : '平静' });
           }
-        });
-        saveGame();
-        renderNPCLifeList();
-      }).catch(function (err) { console.warn('NPC刷新生成失败:', err); });
-  }
+        }
+      });
+      saveGame();
+      renderNPCLifeList();
+    }).catch(function (err) { console.warn('NPC月度更新失败:', err); });
 }
 
 function checkDailyUpdates() {
@@ -4594,10 +4770,15 @@ function autoInitNPCCandidates() {
   var cityName = gameState.header.location || '这座城市';
   var pop = (gameState.demo || {}).population || '数万';
   var econ = gameState.econ || {};
+  var city = gameState.city || {};
   var jobs = [];
   if (econ.facilities) econ.facilities.forEach(function (f) { if (f.type) jobs.push(f.type); });
-  if (jobs.length === 0) jobs = ['工厂工人', '小商贩', '服务员', '清洁工', '出租车司机', '快递员', '摊贩', '保安'];
-  var prompt = '你是城市社会学研究者，为旧存档迁移生成3个底层市民档案。\n\n要求：\n1. **必须是底层普通市民**，绝对不能是官员、商人、贵族、名人\n2. 每个人物：name(姓名)、age(年龄20-60)、job(职业)、trait(性格特征)、background(一句话背景)\n3. JSON数组格式：[{name,age,job,trait,background}]\n4. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop;
+  if (jobs.length === 0) jobs = ['工厂工人', '小商贩', '服务员', '清洁工', '出租车司机', '快递员', '摊贩', '保安', '建筑工人', '厨师', '售货员', '修理工'];
+  var cityBackground = city.face || city.geo_text || '';
+
+  var style = getNPCNameStyle();
+
+  var prompt = '你是城市社会学研究者，为旧存档迁移生成3个底层市民档案。\n\n要求：\n1. **必须是底层普通市民**，绝对不能是官员、商人、贵族、名人\n2. 每个人物：name(姓名)、age(年龄20-60)、job(职业)、trait(性格特征，如勤劳、乐观、焦虑等)、background(一句话背景故事)\n3. **姓名风格必须符合城市背景**：' + style.nameStyle + '\n4. **背景故事和职业必须符合城市设定**：' + style.eraHint + '\n5. JSON数组格式：[{name,age,job,trait,background}]\n6. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop + '\n城市背景：' + cityBackground;
   fetch(c.url + '/chat/completions', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
