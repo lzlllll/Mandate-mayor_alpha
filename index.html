@@ -1939,9 +1939,9 @@
               <div class="text-xs text-gray-600 mb-2 flex items-center justify-between">
                 <span>🗑️ 已终止政策历史</span>
                 <button onclick="togglePolicyHistory()" class="text-[10px] text-[#8b5a2b] hover:underline"
-                  id="policy-history-toggle">展开</button>
+                  id="policy-history-toggle">折叠</button>
               </div>
-              <div id="policy-history-list" class="space-y-1" style="display:none"></div>
+              <div id="policy-history-list" class="space-y-1"></div>
               <div id="policy-history-empty" class="text-xs text-gray-400 text-center py-2" style="display:none">暂无历史记录
               </div>
             </div>
@@ -2297,6 +2297,7 @@ news含4源，各有固定名称和风格。**news不在输入中发送上轮值
 * **更新**：新项中存在同名项→更新其字段（局部更新，禁止全量重发）。
 * **新增**：新项中存在的全新name→添加到数组。
 * **删除**：仅当某项"明确消失/废弃/被合并/不再存在"时→从数组移除，**同时**在对应顶层字段记录删除内容：
+* **修改策略（推荐）**：如果只需要调整现有条目属性而不增删条目，只返回需要修改的同名条目即可。系统会自动合并更新，未返回的旧条目保持不变，无需返回removed_xxx块。
   - ===removed_facilities=== [{"name":"","reason":"≤10字"}]
   - ===removed_exports=== [{"name":"","reason":"≤10字"}]
   - ===removed_imports=== [{"name":"","reason":"≤10字"}]
@@ -2969,6 +2970,28 @@ ENDMAP
     function getScheduleUpdatePrompt(prevTime, newTime) {
       if (!checkCrossDay(prevTime, newTime)) return '';
       return '\n\n# 日程更新指令\n检测到游戏时间已进入新的一天：' + newTime + '\n**请为市长生成今日的完整日程安排（mayor.schedule）**，包含时间、地点和事件，体现市长当天的工作安排。';
+    }
+
+    // 检查是否跨月（用于触发财政更新）
+    function checkCrossMonth(prevTime, newTime) {
+      var now = parseGameTime(newTime);
+      if (!now) return false;
+      var prev = parseGameTime(prevTime);
+      if (!prev) return false;
+      if (now.month !== prev.month) {
+        logInfo('检测到跨月: ' + (prevTime || '初始') + ' → ' + newTime);
+        return true;
+      }
+      return false;
+    }
+
+    // 获取跨月财政更新指令
+    function getFiscalUpdatePrompt(prevTime, newTime) {
+      if (!checkCrossMonth(prevTime, newTime)) return '';
+      var prevMonth = extractGameMonth();
+      var prevExpense = gameState.fiscal && gameState.fiscal.total_expense ? '上轮记录：' + gameState.fiscal.total_expense : '';
+      var prevIncome = gameState.fiscal && gameState.fiscal.total_income ? '上轮记录：' + gameState.fiscal.total_income : '';
+      return '\n\n# 跨月财政更新指令\n检测到游戏时间已进入新月份：' + newTime + '\n**必须执行以下操作：**\n1. 记录上月财政结算：基于上轮的 fiscal.total_expense 和 fiscal.total_income 计算上月实际收支\n2. 重新计算当月财政：根据当前政策、税率、经济状况等重新估算本月 fiscal.total_expense 和 fiscal.total_income\n3. 审查支出项目：根据政策变化和财政状况调整 fiscal.expense_items（可增删改）\n4. 审查收入项目：根据税率和经济状况调整 fiscal.income_items（可增删改）\n5. 输出完整的 fiscal 块，包含更新后的 total_expense、total_income、expense_items、income_items\n上轮财政记录：支出' + prevExpense + '，收入' + prevIncome;
     }
     // ==================== 完整历史存档系统 ====================
     let fullHistory = []; // 完整历史：每回合的 narrative + news + decision
@@ -6548,6 +6571,13 @@ ENDMAP
       if (schedulePrompt) {
         sysContent += schedulePrompt;
         logInfo('跨天检测：需要更新日程安排');
+      }
+
+      // 添加跨月财政更新指令
+      var fiscalPrompt = getFiscalUpdatePrompt(prevTimeForAI, currentTimeForAI);
+      if (fiscalPrompt) {
+        sysContent += fiscalPrompt;
+        logInfo('跨月检测：需要更新财政状况');
       }
 
       // 检查数据缺失并添加补全指令
