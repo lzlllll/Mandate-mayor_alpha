@@ -1471,6 +1471,34 @@
           </label>
         </div>
         <p class="text-xs text-gray-500 mb-3 -mt-1">开启后按钮点击会播放音效。首次需在页面点击任意位置以激活音频。</p>
+        <hr class="my-3 border-[#8b5a2b]/20">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-bold text-gray-700">🖼️ 回合画面（Pollinations.AI）</label>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="cfg-scene-enabled" class="sr-only peer" checked onchange="toggleSceneEnabled()">
+            <div
+              class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#2d5016] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
+            </div>
+          </label>
+        </div>
+        <p class="text-xs text-gray-500 mb-3 -mt-1">开启后每回合自动调用 Pollinations.AI 生成城市风景画，显示在地图下方面板。无需API Key，免费使用。</p>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">🎨 画面风格</label>
+          <select id="cfg-scene-style"
+            class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+            onchange="changeSceneStyle(this.value)">
+            <option value="oil painting style">油画风格</option>
+            <option value="watercolor style">水彩风格</option>
+            <option value="pixel art style">像素画风格</option>
+            <option value="anime style">动漫风格</option>
+            <option value="realistic photography">写实摄影</option>
+            <option value="concept art style">概念艺术</option>
+            <option value="cyberpunk style">赛博朋克</option>
+            <option value="steampunk style">蒸汽朋克</option>
+            <option value="art nouveau style">新艺术风格</option>
+            <option value="ink wash painting">水墨画风</option>
+          </select>
+        </div>
         <div id="smart-config-area" style="display:none">
           <div class="grid grid-cols-2 gap-3 mb-3">
             <div><label class="block text-xs font-bold text-gray-600 mb-1">⚡ Flash 模型</label><input id="cfg-flash-model"
@@ -1783,13 +1811,46 @@
         </div>
       </div>
 
-      <!-- 左侧地图 -->
-      <div id="map-container" class="map-panel" style="position:relative">
-        <canvas id="city-canvas" style="display:block;width:100%;height:100%" oncontextmenu="return false"></canvas>
-        <div id="map-tooltip"
-          style="display:none;position:absolute;pointer-events:none;background:rgba(30,30,30,0.92);color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;white-space:nowrap;z-index:100;transform:translate(-50%,-110%);box-shadow:0 2px 6px rgba(0,0,0,0.4)">
+      <!-- 左侧地图 + 画面 -->
+      <div class="map-panel" style="display:flex;flex-direction:column;position:relative;overflow:hidden">
+        <div id="map-container" style="flex:1;position:relative;overflow:hidden;min-height:0">
+          <canvas id="city-canvas" style="display:block;width:100%;height:100%" oncontextmenu="return false"></canvas>
+          <div id="map-tooltip"
+            style="display:none;position:absolute;pointer-events:none;background:rgba(30,30,30,0.92);color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;white-space:nowrap;z-index:100;transform:translate(-50%,-110%);box-shadow:0 2px 6px rgba(0,0,0,0.4)">
+          </div>
+          <div id="map-legend-bar" class="map-legend-bar" style="display:none"></div>
         </div>
-        <div id="map-legend-bar" class="map-legend-bar" style="display:none"></div>
+        <!-- 回合画面面板 -->
+        <div id="scene-image-panel"
+          style="flex-shrink:0;border-top:2px solid #8b5a2b;background:#f5e6d3;position:relative;display:flex;flex-direction:column">
+          <div
+            style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:#8b5a2b;color:#f5e6d3;font-size:12px;font-weight:bold">
+            <span>🖼️ 回合画面</span>
+            <div class="flex items-center gap-2">
+              <button id="btn-regen-scene" onclick="regenerateSceneImage()"
+                style="background:#d35400;color:#fff;border:none;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer"
+                title="重新生成画面">🔄 重绘</button>
+              <button onclick="toggleScenePanel()"
+                style="background:transparent;color:#f5e6d3;border:none;font-size:14px;cursor:pointer"
+                id="scene-toggle-btn">▼</button>
+            </div>
+          </div>
+          <div id="scene-image-container"
+            style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#2d2d2d">
+            <img id="scene-image" style="max-width:100%;max-height:200px;display:none" alt="回合画面">
+            <div id="scene-loading"
+              style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#f5e6d3;font-size:12px;display:none;flex-direction:column;align-items:center;gap:6px">
+              <div class="animate-spin" style="font-size:24px">🎨</div>
+              <span>正在生成画面...</span>
+            </div>
+            <div id="scene-placeholder" style="color:#999;font-size:12px;padding:20px;text-align:center">
+              回合画面将在下一回合自动生成
+            </div>
+          </div>
+          <div id="scene-caption"
+            style="display:none;padding:4px 8px;background:rgba(0,0,0,0.7);color:#fff;font-size:11px;position:absolute;bottom:0;left:0;right:0">
+          </div>
+        </div>
       </div>
 
       <!-- 右侧内容区（精简） -->
@@ -2642,6 +2703,315 @@ ENDMAP
     let popGrowthHistory = []; // [{month, rate}] 人口增长率历史（近5个月）
     // cityChart 在下文挂载到 window.cityChart
 
+    // ==================== 回合画面系统（Pollinations.AI） ====================
+    let currentSceneImage = null; // 当前画面URL
+    let currentSceneCaption = ''; // 当前画面说明
+    let currentScenePrompt = ''; // 当前画面AI生成的提示词（中文）
+    let isGeneratingScene = false; // 是否正在生成画面
+    let sceneImageEnabled = true; // 画面生成开关
+    let sceneHistory = []; // 历史画面对数 [{turn, time, url, caption, prompt}]
+    let sceneStyle = 'oil painting style'; // 画面风格
+
+    function getScenePromptFallback() {
+      var city = gameState.city || {};
+      var header = gameState.header || {};
+      var macro = gameState.macro || {};
+
+      var cityName = header.location || 'this city';
+      var time = header.time || '';
+      var weather = header.weather || '';
+      var cityFace = city.face || '';
+      var culture = city.culture || '';
+      var era = header.era || '';
+
+      var prompt = '';
+      prompt += 'cityscape of ' + cityName + ', ';
+      if (era) prompt += era + ' era, ';
+      if (cityFace) prompt += cityFace + ', ';
+      if (weather) prompt += weather + ', ';
+
+      var timeOfDay = '';
+      var hourMatch = time.match(/(\d{1,2}):/);
+      if (hourMatch) {
+        var hour = parseInt(hourMatch[1]);
+        if (hour >= 5 && hour < 9) timeOfDay = 'morning sunrise, golden light';
+        else if (hour >= 9 && hour < 12) timeOfDay = 'bright daytime, sunny';
+        else if (hour >= 12 && hour < 14) timeOfDay = 'midday, bright sunlight';
+        else if (hour >= 14 && hour < 17) timeOfDay = 'afternoon light';
+        else if (hour >= 17 && hour < 20) timeOfDay = 'sunset, warm orange sky';
+        else if (hour >= 20 && hour < 23) timeOfDay = 'evening, street lights, dusk';
+        else timeOfDay = 'night, dark, moonlit, city lights';
+      } else {
+        timeOfDay = 'daytime';
+      }
+      prompt += timeOfDay + ', ';
+
+      var econHint = '';
+      if (macro.growth_rate) {
+        var gr = parseFloat(String(macro.growth_rate).replace(/[^-\d.]/g, ''));
+        if (gr > 3) econHint = 'prosperous bustling city, busy markets, construction cranes';
+        else if (gr > 0) econHint = 'moderate activity, normal city life';
+        else if (gr > -2) econHint = 'slightly depressed, some closed shops';
+        else econHint = 'economic depression, empty streets, abandoned buildings';
+      }
+      if (econHint) prompt += econHint + ', ';
+
+      var architecture = '';
+      var bgLower = (cityFace + ' ' + (city.geo_text || '') + ' ' + culture).toLowerCase();
+      if (bgLower.includes('欧洲') || bgLower.includes('哥特') || bgLower.includes('巴洛克') || bgLower.includes('文艺复兴') || bgLower.includes('european') || bgLower.includes('gothic') || bgLower.includes('baroque')) {
+        architecture = 'european architecture, cobblestone streets, historic buildings';
+      } else if (bgLower.includes('东方') || bgLower.includes('华夏') || bgLower.includes('大唐') || bgLower.includes('江南') || bgLower.includes('asian') || bgLower.includes('chinese')) {
+        architecture = 'traditional east asian architecture, curved tile roofs, pagodas, lanterns';
+      } else if (bgLower.includes('幕府') || bgLower.includes('武士') || bgLower.includes('japanese') || bgLower.includes('tokyo')) {
+        architecture = 'japanese architecture, wooden buildings, tatami, shoji screens';
+      } else if (bgLower.includes('工业') || bgLower.includes('蒸汽') || bgLower.includes('industrial') || bgLower.includes('victorian') || bgLower.includes('steampunk')) {
+        architecture = 'industrial era, factories with smokestacks, brick buildings, steam engines';
+      } else if (bgLower.includes('赛博') || bgLower.includes('cyberpunk') || bgLower.includes('未来') || bgLower.includes('futuristic')) {
+        architecture = 'cyberpunk city, neon lights, skyscrapers, holograms, rain';
+      } else if (bgLower.includes('沙漠') || bgLower.includes('阿拉伯') || bgLower.includes('arabian') || bgLower.includes('desert')) {
+        architecture = 'middle eastern architecture, domes, minarets, sandstone buildings, bazaars';
+      } else if (bgLower.includes('中世纪') || bgLower.includes('medieval') || bgLower.includes('城堡') || bgLower.includes('骑士')) {
+        architecture = 'medieval european town, castle walls, thatched roofs, market square';
+      } else {
+        architecture = 'historic city architecture, detailed buildings';
+      }
+      prompt += architecture + ', ';
+
+      prompt += sceneStyle + ', ';
+      prompt += 'highly detailed, cinematic lighting, atmospheric, ';
+      prompt += 'beautiful composition, masterpiece, 4k quality';
+
+      return prompt;
+    }
+
+    function generateScenePromptAI(callback) {
+      var c = getConfig();
+      if (!c || !c.key) {
+        callback(null);
+        return;
+      }
+
+      var city = gameState.city || {};
+      var header = gameState.header || {};
+      var macro = gameState.macro || {};
+
+      var cityInfo = '城市：' + (header.location || '') + '，时间：' + (header.time || '');
+      var eraHint = city.face || city.geo_text || '';
+      var weather = header.weather || '';
+      var econStatus = macro.growth_rate || '平稳';
+
+      var prompt = '根据以下城市信息，生成一个不超过15字的中文画面描述，用于AI绘画。\n\n' +
+        '要求：\n' +
+        '1. 不超过15个汉字\n' +
+        '2. 描绘一个具体的城市场景画面\n' +
+        '3. 结合时代背景、天气、经济氛围\n' +
+        '4. 只返回描述文字，不要任何解释、标点、引号\n' +
+        '5. 生动有画面感\n\n' +
+        '背景信息：' + cityInfo + '\n' +
+        '城市特色：' + eraHint + '\n' +
+        '天气：' + weather + '\n' +
+        '经济状态：' + econStatus;
+
+      fetch(c.url + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: c.model || 'deepseek-chat',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 50,
+          stream: false,
+          temperature: 0.8
+        })
+      }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (data) {
+          var text = (data.choices[0].message.content || '').trim();
+          text = text.replace(/["'""''「」『』]/g, '').replace(/[。，、！？；：]/g, '').trim();
+          if (text.length > 15) text = text.substring(0, 15);
+          if (text.length < 2) {
+            callback(null);
+          } else {
+            callback(text);
+          }
+        }).catch(function (err) {
+          console.warn('画面提示词生成失败:', err);
+          callback(null);
+        });
+    }
+
+    function buildFullPrompt(aiPrompt) {
+      var city = gameState.city || {};
+      var header = gameState.header || {};
+
+      var cityName = header.location || 'a city';
+      var time = header.time || '';
+      var cityFace = city.face || '';
+      var culture = city.culture || '';
+
+      var fullPrompt = '';
+      if (aiPrompt) {
+        fullPrompt += aiPrompt + ', ';
+      }
+      fullPrompt += 'cityscape of ' + cityName + ', ';
+
+      var architecture = '';
+      var bgLower = (cityFace + ' ' + (city.geo_text || '') + ' ' + culture).toLowerCase();
+      if (bgLower.includes('欧洲') || bgLower.includes('哥特') || bgLower.includes('巴洛克') || bgLower.includes('文艺复兴') || bgLower.includes('european') || bgLower.includes('gothic') || bgLower.includes('baroque')) {
+        architecture = 'european architecture';
+      } else if (bgLower.includes('东方') || bgLower.includes('华夏') || bgLower.includes('大唐') || bgLower.includes('江南') || bgLower.includes('asian') || bgLower.includes('chinese')) {
+        architecture = 'traditional east asian architecture';
+      } else if (bgLower.includes('幕府') || bgLower.includes('武士') || bgLower.includes('japanese') || bgLower.includes('tokyo')) {
+        architecture = 'japanese architecture';
+      } else if (bgLower.includes('工业') || bgLower.includes('蒸汽') || bgLower.includes('industrial') || bgLower.includes('victorian') || bgLower.includes('steampunk')) {
+        architecture = 'industrial era architecture';
+      } else if (bgLower.includes('赛博') || bgLower.includes('cyberpunk') || bgLower.includes('未来') || bgLower.includes('futuristic')) {
+        architecture = 'cyberpunk cityscape';
+      } else if (bgLower.includes('沙漠') || bgLower.includes('阿拉伯') || bgLower.includes('arabian') || bgLower.includes('desert')) {
+        architecture = 'middle eastern architecture';
+      } else if (bgLower.includes('中世纪') || bgLower.includes('medieval') || bgLower.includes('城堡') || bgLower.includes('骑士')) {
+        architecture = 'medieval architecture';
+      } else {
+        architecture = 'historic architecture';
+      }
+      fullPrompt += architecture + ', ';
+
+      var timeOfDay = '';
+      var hourMatch = time.match(/(\d{1,2}):/);
+      if (hourMatch) {
+        var hour = parseInt(hourMatch[1]);
+        if (hour >= 5 && hour < 9) timeOfDay = 'morning golden light';
+        else if (hour >= 9 && hour < 17) timeOfDay = 'daytime';
+        else if (hour >= 17 && hour < 20) timeOfDay = 'sunset warm light';
+        else timeOfDay = 'night city lights';
+      } else {
+        timeOfDay = 'daytime';
+      }
+      fullPrompt += timeOfDay + ', ';
+
+      fullPrompt += sceneStyle + ', ';
+      fullPrompt += 'highly detailed, cinematic, atmospheric, beautiful composition, masterpiece';
+
+      return fullPrompt;
+    }
+
+    function generateSceneImage() {
+      if (!sceneImageEnabled) return;
+      if (isGeneratingScene) return;
+      var imgEl = document.getElementById('scene-image');
+      var loadingEl = document.getElementById('scene-loading');
+      var placeholderEl = document.getElementById('scene-placeholder');
+      if (!imgEl) return;
+
+      isGeneratingScene = true;
+      if (loadingEl) { loadingEl.style.display = 'flex'; }
+      if (placeholderEl) { placeholderEl.style.display = 'none'; }
+      imgEl.style.display = 'none';
+
+      generateScenePromptAI(function (aiPrompt) {
+        var finalPrompt;
+        if (aiPrompt) {
+          currentScenePrompt = aiPrompt;
+          finalPrompt = buildFullPrompt(aiPrompt);
+        } else {
+          currentScenePrompt = '';
+          finalPrompt = getScenePromptFallback();
+        }
+
+        var seed = Math.floor(Math.random() * 1000000);
+        var encodedPrompt = encodeURIComponent(finalPrompt);
+        var width = 768;
+        var height = 384;
+        var url = 'https://image.pollinations.ai/prompt/' + encodedPrompt
+          + '?width=' + width
+          + '&height=' + height
+          + '&seed=' + seed
+          + '&nologo=true'
+          + '&model=flux';
+
+        imgEl.onload = function () {
+          isGeneratingScene = false;
+          if (loadingEl) { loadingEl.style.display = 'none'; }
+          imgEl.style.display = 'block';
+
+          currentSceneImage = url;
+          var captionText = (gameState.header.time || '') + ' · ' + (gameState.header.location || '');
+          if (currentScenePrompt) {
+            captionText = '「' + currentScenePrompt + '」 · ' + captionText;
+          }
+          currentSceneCaption = captionText;
+
+          var captionEl = document.getElementById('scene-caption');
+          if (captionEl) {
+            captionEl.textContent = currentSceneCaption;
+            captionEl.style.display = 'block';
+          }
+
+          sceneHistory.push({
+            turn: turnCount,
+            time: gameState.header.time || '',
+            url: url,
+            caption: currentSceneCaption,
+            prompt: currentScenePrompt
+          });
+          if (sceneHistory.length > 20) sceneHistory.shift();
+
+          saveGame();
+        };
+
+        imgEl.onerror = function () {
+          isGeneratingScene = false;
+          if (loadingEl) { loadingEl.style.display = 'none'; }
+          if (placeholderEl) {
+            placeholderEl.style.display = 'block';
+            placeholderEl.textContent = '画面生成失败，请稍后重试';
+          }
+          logWarn('场景图片生成失败');
+        };
+
+        imgEl.src = url;
+      });
+    }
+
+    function regenerateSceneImage() {
+      generateSceneImage();
+    }
+
+    function toggleScenePanel() {
+      var container = document.getElementById('scene-image-container');
+      var btn = document.getElementById('scene-toggle-btn');
+      if (!container || !btn) return;
+      if (container.style.display === 'none') {
+        container.style.display = 'flex';
+        btn.textContent = '▼';
+      } else {
+        container.style.display = 'none';
+        btn.textContent = '▲';
+      }
+    }
+
+    function setSceneEnabled(enabled) {
+      sceneImageEnabled = enabled;
+      localStorage.setItem('aic_scene_enabled', enabled ? '1' : '0');
+      if (!enabled) {
+        var panel = document.getElementById('scene-image-panel');
+        if (panel) panel.style.display = 'none';
+      } else {
+        var panel = document.getElementById('scene-image-panel');
+        if (panel) panel.style.display = '';
+        if (!currentSceneImage) generateSceneImage();
+      }
+    }
+
+    function toggleSceneEnabled() {
+      var checkbox = document.getElementById('cfg-scene-enabled');
+      if (!checkbox) return;
+      setSceneEnabled(checkbox.checked);
+    }
+
+    function changeSceneStyle(style) {
+      sceneStyle = style;
+      localStorage.setItem('aic_scene_style', style);
+    }
+
     // ==================== 市井百态：钉选NPC ====================
     let pinnedNPCs = []; // [{name, age, job, trait, background, lastUpdate, dailyLog:[{day, text, mood}]}]
     let npcLifeCandidates = []; // AI生成的候选底层NPC
@@ -3205,6 +3575,13 @@ ENDMAP
       if (aiEnh) aiEnh.checked = smartAIEnhanced;
       toggleSmartConfig();
       loadSoundEnabled(); // 加载音效开关设置
+      // 加载画面系统设置
+      try { sceneImageEnabled = localStorage.getItem('aic_scene_enabled') !== '0'; } catch (e) { sceneImageEnabled = true; }
+      try { sceneStyle = localStorage.getItem('aic_scene_style') || 'oil painting style'; } catch (e) { sceneStyle = 'oil painting style'; }
+      var sceneCb = document.getElementById('cfg-scene-enabled');
+      if (sceneCb) sceneCb.checked = sceneImageEnabled;
+      var sceneStyleEl = document.getElementById('cfg-scene-style');
+      if (sceneStyleEl) sceneStyleEl.value = sceneStyle;
       if (localModelReady) {
         var dlStatus = document.getElementById('model-download-status');
         if (dlStatus) { dlStatus.textContent = '✅ 本地模型已就绪'; dlStatus.className = 'text-xs text-center text-green-600'; }
@@ -4757,6 +5134,8 @@ ENDMAP
         var panelRefreshBtn = document.getElementById('start-btn-refresh');
         if (panelRefreshBtn) panelRefreshBtn.style.display = '';
         checkDailyUpdates();
+        // 生成初始画面
+        setTimeout(function () { generateSceneImage(); }, 500);
       }
     }
 
@@ -6829,6 +7208,8 @@ ENDMAP
         window.playReplyFinished();
         btn.disabled = false; btn.textContent = '⏭️ 结束回合';
         checkDailyUpdates();
+        // 每回合生成画面
+        setTimeout(function () { generateSceneImage(); }, 300);
       }
     }
     function copyToClipboard(text) {
@@ -7220,6 +7601,10 @@ ENDMAP
       localStorage.setItem('aic_npclastday', _npcLifeLastDay);
       localStorage.setItem('aic_npclastmonth', _npcLifeLastMonth);
       localStorage.setItem('aic_broadcastlastday', _broadcastLastDay);
+      localStorage.setItem('aic_scene_current', currentSceneImage || '');
+      localStorage.setItem('aic_scene_caption', currentSceneCaption || '');
+      localStorage.setItem('aic_scene_prompt', currentScenePrompt || '');
+      localStorage.setItem('aic_scene_history', JSON.stringify(sceneHistory));
       if (refreshSnapshot) {
         var snap = { isOpening: !!refreshSnapshot.isOpening, messages: refreshSnapshot.messages || null, apiModel: refreshSnapshot.apiModel || '', appointmentText: refreshSnapshot.appointmentText || '' };
         if (!snap.isOpening) {
@@ -7304,6 +7689,12 @@ ENDMAP
       _npcLifeLastDay = localStorage.getItem('aic_npclastday') || '';
       _npcLifeLastMonth = localStorage.getItem('aic_npclastmonth') || '';
       _broadcastLastDay = localStorage.getItem('aic_broadcastlastday') || '';
+      currentSceneImage = localStorage.getItem('aic_scene_current') || null;
+      currentSceneCaption = localStorage.getItem('aic_scene_caption') || '';
+      currentScenePrompt = localStorage.getItem('aic_scene_prompt') || '';
+      try {
+        sceneHistory = JSON.parse(localStorage.getItem('aic_scene_history') || '[]');
+      } catch (e) { sceneHistory = []; }
       try {
         var snapStr = localStorage.getItem('aic_refresh_snap');
         if (snapStr) {
@@ -7631,7 +8022,11 @@ ENDMAP
         broadcastSegments: broadcastSegments,
         npcLifeLastDay: _npcLifeLastDay,
         npcLifeLastMonth: _npcLifeLastMonth,
-        broadcastLastDay: _broadcastLastDay
+        broadcastLastDay: _broadcastLastDay,
+        sceneImage: currentSceneImage,
+        sceneCaption: currentSceneCaption,
+        scenePrompt: currentScenePrompt,
+        sceneHistory: sceneHistory
       };
       var blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
       var url = URL.createObjectURL(blob);
@@ -7690,6 +8085,10 @@ ENDMAP
           _npcLifeLastDay = saveData.npcLifeLastDay || '';
           _npcLifeLastMonth = saveData.npcLifeLastMonth || '';
           _broadcastLastDay = saveData.broadcastLastDay || '';
+          currentSceneImage = saveData.sceneImage || null;
+          currentSceneCaption = saveData.sceneCaption || '';
+          currentScenePrompt = saveData.scenePrompt || '';
+          sceneHistory = saveData.sceneHistory || [];
           // 保存到 localStorage
           saveGame();
           // 重新渲染
@@ -7857,6 +8256,7 @@ ENDMAP
       renderBroadcastBar();
       renderEthnicityPieChart();
       renderReligionPieChart();
+      renderScenePanel();
       recordPopGrowth();
       renderPopGrowthChart();
       fitNarrativeHeight();
@@ -8578,6 +8978,37 @@ ENDMAP
       var bar = document.getElementById('broadcast-bar');
       if (bar) bar.style.display = 'block';
       updateBroadcast();
+    }
+
+    function renderScenePanel() {
+      var panel = document.getElementById('scene-image-panel');
+      var imgEl = document.getElementById('scene-image');
+      var placeholderEl = document.getElementById('scene-placeholder');
+      var captionEl = document.getElementById('scene-caption');
+      if (!panel || !imgEl) return;
+
+      if (!sceneImageEnabled) {
+        panel.style.display = 'none';
+        return;
+      }
+      panel.style.display = '';
+
+      if (currentSceneImage) {
+        imgEl.src = currentSceneImage;
+        imgEl.style.display = 'block';
+        if (placeholderEl) placeholderEl.style.display = 'none';
+        if (captionEl && currentSceneCaption) {
+          captionEl.textContent = currentSceneCaption;
+          captionEl.style.display = 'block';
+        }
+      } else {
+        imgEl.style.display = 'none';
+        if (placeholderEl) {
+          placeholderEl.style.display = 'block';
+          placeholderEl.textContent = '回合画面将在下一回合自动生成';
+        }
+        if (captionEl) captionEl.style.display = 'none';
+      }
     }
 
     function generateBroadcastContent() {
