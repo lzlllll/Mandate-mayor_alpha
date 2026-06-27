@@ -1432,184 +1432,190 @@
 
   <!-- ==== API设置模态框 ==== -->
   <div id="settings-modal" class="fixed inset-0 z-50 items-center justify-center modal-overlay" style="display:none">
-    <div class="bg-amber-50 rounded-xl p-6 max-w-lg w-full mx-4 border-2 border-[#8b5a2b]"
-      style="box-shadow:5px 5px 15px rgba(0,0,0,0.3);margin-top:10vh">
-      <div class="flex justify-between items-center mb-4">
+    <div class="bg-amber-50 rounded-xl border-2 border-[#8b5a2b] max-w-lg w-full mx-4 flex flex-col"
+      style="box-shadow:5px 5px 15px rgba(0,0,0,0.3);max-height:90vh;margin-top:5vh;margin-bottom:5vh">
+      <div class="flex justify-between items-center p-6 pb-4 border-b border-[#8b5a2b]/20 shrink-0">
         <h2 class="text-2xl font-bold font-cyber text-[#8b5a2b]">⚙️ API 设置</h2>
         <button onclick="toggleSettings()" class="text-gray-500 hover:text-[#8b5a2b] text-2xl">&times;</button>
       </div>
-      <div class="space-y-3">
-        <div><label class="block text-sm font-bold text-gray-700 mb-1">API 地址</label><input id="cfg-url"
-            class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-            placeholder="https://api.deepseek.com/v1"></div>
-        <div><label class="block text-sm font-bold text-gray-700 mb-1">API Key</label><input id="cfg-key"
-            type="password"
-            class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-            placeholder="sk-..."></div>
-        <div><label class="block text-sm font-bold text-gray-700 mb-1">模型名称（默认）</label><input id="cfg-model"
-            class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-            placeholder="deepseek-chat"></div>
-        <hr class="my-3 border-[#8b5a2b]/20">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-sm font-bold text-gray-700">🧠 智能模型模式</label>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="cfg-smart-mode" class="sr-only peer" onchange="toggleSmartConfig()">
-            <div
-              class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#2d5016] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
-            </div>
-          </label>
-        </div>
-        <p class="text-xs text-gray-500 mb-3 -mt-1">开启后自动分析玩家决策复杂度，智能选择 flash/pro 模型，并仅发送相关数据给AI。</p>
-        <hr class="my-3 border-[#8b5a2b]/20">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-sm font-bold text-gray-700">🔊 点击音效</label>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="cfg-sound-enabled" class="sr-only peer" checked onchange="toggleSoundEnabled()">
-            <div
-              class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#2d5016] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
-            </div>
-          </label>
-        </div>
-        <p class="text-xs text-gray-500 mb-3 -mt-1">开启后按钮点击会播放音效。首次需在页面点击任意位置以激活音频。</p>
-        <hr class="my-3 border-[#8b5a2b]/20">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-sm font-bold text-gray-700">🖼️ 回合画面（Pollinations.AI）</label>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="cfg-scene-enabled" class="sr-only peer" checked onchange="toggleSceneEnabled()">
-            <div
-              class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#2d5016] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
-            </div>
-          </label>
-        </div>
-        <p class="text-xs text-gray-500 mb-3 -mt-1">开启后每回合自动调用 Pollinations.AI 生成城市风景画，显示在地图下方面板。无需API Key，免费使用。</p>
-        <div>
-          <label class="block text-xs font-bold text-gray-600 mb-1">🎨 画面风格</label>
-          <select id="cfg-scene-style"
-            class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-            onchange="changeSceneStyle(this.value)">
-            <option value="oil painting style">油画风格</option>
-            <option value="watercolor style">水彩风格</option>
-            <option value="pixel art style">像素画风格</option>
-            <option value="anime style">动漫风格</option>
-            <option value="realistic photography">写实摄影</option>
-            <option value="concept art style">概念艺术</option>
-            <option value="cyberpunk style">赛博朋克</option>
-            <option value="steampunk style">蒸汽朋克</option>
-            <option value="art nouveau style">新艺术风格</option>
-            <option value="ink wash painting">水墨画风</option>
-          </select>
-        </div>
-        <div id="smart-config-area" style="display:none">
-          <div class="grid grid-cols-2 gap-3 mb-3">
-            <div><label class="block text-xs font-bold text-gray-600 mb-1">⚡ Flash 模型</label><input id="cfg-flash-model"
-                class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-                placeholder="deepseek-chat"></div>
-            <div><label class="block text-xs font-bold text-gray-600 mb-1">🔮 Pro 模型</label><input id="cfg-pro-model"
-                class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-                placeholder="deepseek-reasoner"></div>
-          </div>
-          <div class="mb-3">
-            <label class="block text-xs font-bold text-gray-600 mb-1">复杂度阈值：<span
-                id="cfg-threshold-label">50</span></label>
-            <input type="range" id="cfg-complexity-threshold" min="20" max="80" value="50" step="5"
-              class="w-full accent-[#8b5a2b]"
-              oninput="document.getElementById('cfg-threshold-label').textContent=this.value">
-            <p class="text-xs text-gray-400">低于阈值用Flash模型，高于阈值用Pro模型</p>
-          </div>
+      <div id="settings-body" class="flex-1 overflow-y-auto p-6" style="max-height:calc(90vh - 140px)">
+        <div class="space-y-3">
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">API 地址</label><input id="cfg-url"
+              class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+              placeholder="https://api.deepseek.com/v1"></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">API Key</label><input id="cfg-key"
+              type="password"
+              class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+              placeholder="sk-..."></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">模型名称（默认）</label><input id="cfg-model"
+              class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+              placeholder="deepseek-chat"></div>
+          <hr class="my-3 border-[#8b5a2b]/20">
           <div class="flex items-center justify-between mb-2">
-            <label class="text-sm font-bold text-gray-700">🤖 AI增强分析（本地模型）</label>
+            <label class="text-sm font-bold text-gray-700">🧠 智能模型模式</label>
             <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" id="cfg-ai-enhanced" class="sr-only peer">
+              <input type="checkbox" id="cfg-smart-mode" class="sr-only peer" onchange="toggleSmartConfig()">
               <div
                 class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#2d5016] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
               </div>
             </label>
           </div>
-          <p class="text-xs text-gray-500 mb-3 -mt-1">下载本地模型（~80MB），提升复杂度+数据类别判断准确性。首次需下载。</p>
-          <button onclick="downloadLocalModel()" id="btn-download-model"
-            class="w-full bg-[#4a3c31] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm mb-2">📥
-            下载本地分析模型</button>
-          <div id="model-download-status" class="text-xs text-center text-gray-500"></div>
-          <div class="mt-3 p-2 bg-amber-100 rounded border border-amber-300">
-            <p class="text-xs font-bold text-[#8b5a2b]">📊 最近分析结果<span id="smart-analyzer-label"
-                class="text-gray-500">（无）</span></p>
-            <div class="flex items-center space-x-2 mt-1">
-              <span class="text-xs text-gray-600">复杂度:</span>
-              <div class="flex-1 h-2 bg-gray-200 rounded-full">
-                <div id="complexity-bar-fill" class="h-full bg-[#8b5a2b] rounded-full" style="width:0%"></div>
+          <p class="text-xs text-gray-500 mb-3 -mt-1">开启后自动分析玩家决策复杂度，智能选择 flash/pro 模型，并仅发送相关数据给AI。</p>
+          <hr class="my-3 border-[#8b5a2b]/20">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-bold text-gray-700">🔊 点击音效</label>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="cfg-sound-enabled" class="sr-only peer" checked
+                onchange="toggleSoundEnabled()">
+              <div
+                class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#2d5016] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
               </div>
-              <span id="complexity-value" class="text-xs font-bold">--</span>
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 mb-3 -mt-1">开启后按钮点击会播放音效。首次需在页面点击任意位置以激活音频。</p>
+          <hr class="my-3 border-[#8b5a2b]/20">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-bold text-gray-700">🖼️ 回合画面（Pollinations.AI）</label>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="cfg-scene-enabled" class="sr-only peer" checked
+                onchange="toggleSceneEnabled()">
+              <div
+                class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#2d5016] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
+              </div>
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 mb-3 -mt-1">开启后每回合自动调用 Pollinations.AI 生成城市风景画，显示在地图下方面板。无需API Key，免费使用。</p>
+          <div>
+            <label class="block text-xs font-bold text-gray-600 mb-1">🎨 画面风格</label>
+            <select id="cfg-scene-style"
+              class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+              onchange="changeSceneStyle(this.value)">
+              <option value="oil painting style">油画风格</option>
+              <option value="watercolor style">水彩风格</option>
+              <option value="pixel art style">像素画风格</option>
+              <option value="anime style">动漫风格</option>
+              <option value="realistic photography">写实摄影</option>
+              <option value="concept art style">概念艺术</option>
+              <option value="cyberpunk style">赛博朋克</option>
+              <option value="steampunk style">蒸汽朋克</option>
+              <option value="art nouveau style">新艺术风格</option>
+              <option value="ink wash painting">水墨画风</option>
+            </select>
+          </div>
+          <div id="smart-config-area" style="display:none">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div><label class="block text-xs font-bold text-gray-600 mb-1">⚡ Flash 模型</label><input
+                  id="cfg-flash-model"
+                  class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+                  placeholder="deepseek-chat"></div>
+              <div><label class="block text-xs font-bold text-gray-600 mb-1">🔮 Pro 模型</label><input id="cfg-pro-model"
+                  class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+                  placeholder="deepseek-reasoner"></div>
             </div>
-            <p id="complexity-summary" class="text-xs text-gray-500 mt-1"></p>
-          </div>
-        </div>
-        <div><label class="block text-sm font-bold text-gray-700 mb-1">历史存档上限（轮）</label><input id="cfg-maxhist"
-            type="number" min="10" max="500"
-            class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-            placeholder="100"></div>
-        <div><label class="block text-sm font-bold text-gray-700 mb-1">🗺️ 地图网格大小：<span
-              id="cfg-grid-size-label">8</span> × <span id="cfg-grid-size-label2">8</span></label>
-          <input type="range" id="cfg-map-grid-size" min="4" max="50" value="8" step="1" class="w-full accent-[#8b5a2b]"
-            oninput="document.getElementById('cfg-grid-size-label').textContent=this.value;document.getElementById('cfg-grid-size-label2').textContent=this.value">
-          <div class="flex justify-between text-xs text-gray-400 px-1">
-            <span>4×4</span>
-            <span>50×50</span>
-          </div>
-          <p class="text-xs text-gray-500 mt-1">网格越大，地图越精细，但消耗更多AI token。②④ ⏳</p>
-        </div>
-        <div><label class="block text-sm font-bold text-gray-700 mb-1">自定义提示词（追加到系统提示词末尾）</label><textarea
-            id="cfg-custom-prompt" rows="4"
-            class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-xs focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-            placeholder="输入您想追加的自定义指令...（可选）"></textarea></div>
-        <div class="flex space-x-3 pt-3">
-          <button onclick="saveSettings()"
-            class="flex-1 bg-[#8b5a2b] hover:opacity-80 text-white py-2 rounded-lg font-bold">💾 保存</button>
-          <button onclick="testConnection()"
-            class="flex-1 bg-[#4a3c31] hover:opacity-80 text-white py-2 rounded-lg font-bold">🔍 测试连接</button>
-        </div>
-        <div id="test-result" class="text-sm text-center mt-1"></div>
-        <hr class="my-3 border-[#8b5a2b]/20">
-        <p class="text-xs text-gray-500 mb-2">📁 文件存档：将完整游戏数据导出为 .json
-          文件保存到磁盘，或从文件恢复存档（可用于备份、跨设备迁移）。浏览器自动存档（localStorage）在关闭浏览器后也仍然保留。</p>
-        <div class="flex space-x-3">
-          <button onclick="exportSaveFile()"
-            class="flex-1 bg-[#2d5016] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm">📥
-            导出存档到文件</button>
-          <button onclick="document.getElementById('import-file-input').click()"
-            class="flex-1 bg-[#4a3c31] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm">📤
-            从文件导入存档</button>
-          <input type="file" id="import-file-input" accept=".json" onchange="importSaveFile(this)" class="hidden">
-        </div>
-        <div id="file-result" class="text-sm text-center mt-1"></div>
-        <hr class="my-3 border-[#8b5a2b]/20">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-sm font-bold text-gray-700">🔧 开发者模式</label>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="cfg-dev-mode" class="sr-only peer" onchange="toggleDevMode()">
-            <div
-              class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#b85c38] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
+            <div class="mb-3">
+              <label class="block text-xs font-bold text-gray-600 mb-1">复杂度阈值：<span
+                  id="cfg-threshold-label">50</span></label>
+              <input type="range" id="cfg-complexity-threshold" min="20" max="80" value="50" step="5"
+                class="w-full accent-[#8b5a2b]"
+                oninput="document.getElementById('cfg-threshold-label').textContent=this.value">
+              <p class="text-xs text-gray-400">低于阈值用Flash模型，高于阈值用Pro模型</p>
             </div>
-          </label>
-        </div>
-        <p class="text-xs text-gray-500 mb-3 -mt-1">开启后显示调试信息，可导出最近一轮AI的完整JSON回复。</p>
-        <div id="dev-mode-area" style="display:none">
-          <button onclick="exportLastAIResponse()"
-            class="w-full bg-[#b85c38] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm mb-2">📥
-            导出最近AI回复</button>
-          <button onclick="showLastAIResponse()"
-            class="w-full bg-[#4a3c31] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm mb-2">👁️
-            查看最近AI回复</button>
-          <div id="ai-response-content" class="hidden">
-            <textarea id="ai-response-textarea" rows="10" readonly
-              class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-gray-900 text-green-400 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
-              style="min-height:200px"></textarea>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-bold text-gray-700">🤖 AI增强分析（本地模型）</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="cfg-ai-enhanced" class="sr-only peer">
+                <div
+                  class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#2d5016] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
+                </div>
+              </label>
+            </div>
+            <p class="text-xs text-gray-500 mb-3 -mt-1">下载本地模型（~80MB），提升复杂度+数据类别判断准确性。首次需下载。</p>
+            <button onclick="downloadLocalModel()" id="btn-download-model"
+              class="w-full bg-[#4a3c31] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm mb-2">📥
+              下载本地分析模型</button>
+            <div id="model-download-status" class="text-xs text-center text-gray-500"></div>
+            <div class="mt-3 p-2 bg-amber-100 rounded border border-amber-300">
+              <p class="text-xs font-bold text-[#8b5a2b]">📊 最近分析结果<span id="smart-analyzer-label"
+                  class="text-gray-500">（无）</span></p>
+              <div class="flex items-center space-x-2 mt-1">
+                <span class="text-xs text-gray-600">复杂度:</span>
+                <div class="flex-1 h-2 bg-gray-200 rounded-full">
+                  <div id="complexity-bar-fill" class="h-full bg-[#8b5a2b] rounded-full" style="width:0%"></div>
+                </div>
+                <span id="complexity-value" class="text-xs font-bold">--</span>
+              </div>
+              <p id="complexity-summary" class="text-xs text-gray-500 mt-1"></p>
+            </div>
           </div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">历史存档上限（轮）</label><input id="cfg-maxhist"
+              type="number" min="10" max="500"
+              class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+              placeholder="100"></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">🗺️ 地图网格大小：<span
+                id="cfg-grid-size-label">8</span> × <span id="cfg-grid-size-label2">8</span></label>
+            <input type="range" id="cfg-map-grid-size" min="4" max="50" value="8" step="1"
+              class="w-full accent-[#8b5a2b]"
+              oninput="document.getElementById('cfg-grid-size-label').textContent=this.value;document.getElementById('cfg-grid-size-label2').textContent=this.value">
+            <div class="flex justify-between text-xs text-gray-400 px-1">
+              <span>4×4</span>
+              <span>50×50</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">网格越大，地图越精细，但消耗更多AI token。②④ ⏳</p>
+          </div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">自定义提示词（追加到系统提示词末尾）</label><textarea
+              id="cfg-custom-prompt" rows="4"
+              class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-amber-100 text-gray-800 text-xs focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+              placeholder="输入您想追加的自定义指令...（可选）"></textarea></div>
+          <div class="flex space-x-3 pt-3">
+            <button onclick="saveSettings()"
+              class="flex-1 bg-[#8b5a2b] hover:opacity-80 text-white py-2 rounded-lg font-bold">💾 保存</button>
+            <button onclick="testConnection()"
+              class="flex-1 bg-[#4a3c31] hover:opacity-80 text-white py-2 rounded-lg font-bold">🔍 测试连接</button>
+          </div>
+          <div id="test-result" class="text-sm text-center mt-1"></div>
+          <hr class="my-3 border-[#8b5a2b]/20">
+          <p class="text-xs text-gray-500 mb-2">📁 文件存档：将完整游戏数据导出为 .json
+            文件保存到磁盘，或从文件恢复存档（可用于备份、跨设备迁移）。浏览器自动存档（localStorage）在关闭浏览器后也仍然保留。</p>
+          <div class="flex space-x-3">
+            <button onclick="exportSaveFile()"
+              class="flex-1 bg-[#2d5016] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm">📥
+              导出存档到文件</button>
+            <button onclick="document.getElementById('import-file-input').click()"
+              class="flex-1 bg-[#4a3c31] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm">📤
+              从文件导入存档</button>
+            <input type="file" id="import-file-input" accept=".json" onchange="importSaveFile(this)" class="hidden">
+          </div>
+          <div id="file-result" class="text-sm text-center mt-1"></div>
+          <hr class="my-3 border-[#8b5a2b]/20">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-bold text-gray-700">🔧 开发者模式</label>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="cfg-dev-mode" class="sr-only peer" onchange="toggleDevMode()">
+              <div
+                class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[#b85c38] peer-focus:ring-1 peer-focus:ring-[#8b5a2b]/50 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full">
+              </div>
+            </label>
+          </div>
+          <p class="text-xs text-gray-500 mb-3 -mt-1">开启后显示调试信息，可导出最近一轮AI的完整JSON回复。</p>
+          <div id="dev-mode-area" style="display:none">
+            <button onclick="exportLastAIResponse()"
+              class="w-full bg-[#b85c38] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm mb-2">📥
+              导出最近AI回复</button>
+            <button onclick="showLastAIResponse()"
+              class="w-full bg-[#4a3c31] hover:opacity-80 text-white py-2 rounded-lg font-bold text-sm mb-2">👁️
+              查看最近AI回复</button>
+            <div id="ai-response-content" class="hidden">
+              <textarea id="ai-response-textarea" rows="10" readonly
+                class="w-full border border-[#8b5a2b]/50 rounded-lg p-2 bg-gray-900 text-green-400 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#8b5a2b]"
+                style="min-height:200px"></textarea>
+            </div>
+          </div>
+          <hr class="my-3 border-[#8b5a2b]/20">
+          <p class="text-xs text-red-600 mb-2">⚠️ 危险操作：清除所有浏览器本地数据（游戏进度、API配置、自定义提示词等）。清除后需重新配置API并导入存档或开始新游戏。</p>
+          <button onclick="clearAllData()"
+            class="w-full bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 py-2 rounded-lg font-bold text-sm">🗑️
+            清除所有本地数据</button>
         </div>
-        <hr class="my-3 border-[#8b5a2b]/20">
-        <p class="text-xs text-red-600 mb-2">⚠️ 危险操作：清除所有浏览器本地数据（游戏进度、API配置、自定义提示词等）。清除后需重新配置API并导入存档或开始新游戏。</p>
-        <button onclick="clearAllData()"
-          class="w-full bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 py-2 rounded-lg font-bold text-sm">🗑️
-          清除所有本地数据</button>
       </div>
     </div>
   </div>
@@ -1770,6 +1776,8 @@
             class="btn-emoji">📰</span><span class="btn-label">新闻</span></button>
         <button onclick="window.playSound('history', 0.4); openHistoryModal()" id="left-btn-history" title="历史"><span
             class="btn-emoji">📜</span><span class="btn-label">历史</span></button>
+        <button onclick="window.playSound('admin', 0.4); toggleLeftPanel('agency')" id="left-btn-agency"
+          title="政府机构"><span class="btn-emoji">🏛️</span><span class="btn-label">机构</span></button>
         <button onclick="window.playSound('observer_npc', 0.4); toggleLeftPanel('life')" id="left-btn-life"
           title="市井百态"><span class="btn-emoji">👁️</span><span class="btn-label">市井</span></button>
       </div>
@@ -1797,6 +1805,10 @@
           <!-- 历史决策内容 -->
           <div id="left-section-history" style="display:none">
             <div id="history-sidebar" class="space-y-1 overflow-y-auto scrollbar-thin text-xs"></div>
+          </div>
+          <!-- 政府机构 -->
+          <div id="left-section-agency" style="display:none">
+            <div id="agency-panel" class="space-y-2 overflow-y-auto scrollbar-thin text-xs"></div>
           </div>
           <!-- 市井百态 -->
           <div id="left-section-life" style="display:none">
@@ -2003,7 +2015,8 @@
                   id="policy-history-toggle">折叠</button>
               </div>
               <div id="policy-history-list" class="space-y-1"></div>
-              <div id="policy-history-empty" class="text-xs text-gray-400 text-center py-2" style="display:none">暂无历史记录
+              <div id="policy-history-empty" class="text-xs text-gray-400 text-center py-2" style="display:none">
+                暂无历史记录
               </div>
             </div>
           </div>
@@ -2258,7 +2271,7 @@
       });
 
       // 更新标题
-      var titles = { mayor: '👤 市长档案', npc: '👥 NPC角色', news: '📰 新闻', history: '📜 历史决策', life: '👁️ 市井百态' };
+      var titles = { mayor: '👤 市长档案', npc: '👥 NPC角色', news: '📰 新闻', history: '📜 历史决策', agency: '🏛️ 政府机构', life: '👁️ 市井百态' };
       if (titleEl) titleEl.textContent = titles[name] || '面板';
     };
 
@@ -3012,8 +3025,13 @@ ENDMAP
       localStorage.setItem('aic_scene_style', style);
     }
 
-    // ==================== 市井百态：钉选NPC ====================
-    let pinnedNPCs = []; // [{name, age, job, trait, background, lastUpdate, dailyLog:[{day, text, mood}]}]
+    // ==================== 市井百态：钉选NPC（增强版） ====================
+    let pinnedNPCs = []; // [{name, age, job, trait, background, personality, ideology, loyalty, trustworthiness, compliance, lastUpdate, dailyLog:[{day, text, mood, realMood, hiddenAction}]}]
+    // personality: 性格（一个词，如"固执"、"圆滑"、"激进"）
+    // ideology: 理念（一个词，如"保守"、"改革派"、"实用主义"）
+    // loyalty: 对市长忠诚度(0-100)
+    // trustworthiness: 可信度(0-100)，低则可能虚报
+    // compliance: 服从度(0-100)，低则可能阳奉阴违
     let npcLifeCandidates = []; // AI生成的候选底层NPC
     let _npcLifeLastDay = ''; // 上次更新日历（每天只更新一次）
     let _npcLifeLastMonth = ''; // 上次月度更新月份
@@ -3021,6 +3039,21 @@ ENDMAP
     let broadcastSegments = []; // 广播段落数组
     let _broadcastLastDay = ''; // 上次更新广播的时间
     let isProcessing = false;
+
+    // ==================== 政府机构系统 ====================
+    let governmentAgencies = []; // [{name, type, scale, head, headAbility, satisfaction, corruption, diligence, budget, staffCount, lastUpdate}]
+    // name: 机构名称
+    // type: 机构类型（行政/财政/治安/建设/教育/医疗等）
+    // scale: 规模等级（小型/中型/大型）
+    // head: 负责人姓名
+    // headAbility: 负责人办公能力(0-100)
+    // satisfaction: 满意度(0-100)
+    // corruption: 腐败程度(0-100，越高越腐败)
+    // diligence: 勤奋程度(0-100)
+    // budget: 预算占用（百分比）
+    // staffCount: 人员数量
+    // ideology: 机构整体理念倾向（保守/中立/改革）
+    let _agencyLastMonth = ''; // 上次更新机构月份
     // ==================== 刷新功能快照 ====================
     let refreshSnapshot = null; // { gameState, turnCount, shortLen, fullLen, histLen, chartLabelsLen, chartGdpLen, chartSupLen, lastUser, lastAssistant, decision }
     let customPrompt = ''; // 玩家自定义追加提示词
@@ -4479,6 +4512,8 @@ ENDMAP
         broadcastSegments = [];
         _npcLifeLastDay = '';
         _broadcastLastDay = '';
+        governmentAgencies = [];
+        _agencyLastMonth = '';
         // 保存存档
         saveGame();
         // 隐藏加载界面，显示游戏界面
@@ -7605,6 +7640,8 @@ ENDMAP
       localStorage.setItem('aic_scene_caption', currentSceneCaption || '');
       localStorage.setItem('aic_scene_prompt', currentScenePrompt || '');
       localStorage.setItem('aic_scene_history', JSON.stringify(sceneHistory));
+      localStorage.setItem('aic_agencies', JSON.stringify(governmentAgencies));
+      localStorage.setItem('aic_agency_lastmonth', _agencyLastMonth || '');
       if (refreshSnapshot) {
         var snap = { isOpening: !!refreshSnapshot.isOpening, messages: refreshSnapshot.messages || null, apiModel: refreshSnapshot.apiModel || '', appointmentText: refreshSnapshot.appointmentText || '' };
         if (!snap.isOpening) {
@@ -7696,6 +7733,10 @@ ENDMAP
         sceneHistory = JSON.parse(localStorage.getItem('aic_scene_history') || '[]');
       } catch (e) { sceneHistory = []; }
       try {
+        governmentAgencies = JSON.parse(localStorage.getItem('aic_agencies') || '[]');
+      } catch (e) { governmentAgencies = []; }
+      _agencyLastMonth = localStorage.getItem('aic_agency_lastmonth') || '';
+      try {
         var snapStr = localStorage.getItem('aic_refresh_snap');
         if (snapStr) {
           var snap = JSON.parse(snapStr);
@@ -7736,6 +7777,8 @@ ENDMAP
       broadcastSegments = [];
       _npcLifeLastDay = '';
       _broadcastLastDay = '';
+      governmentAgencies = [];
+      _agencyLastMonth = '';
       resetStartPanel();
       document.getElementById('start-panel').style.display = 'flex';
       loadStartAPIConfig();
@@ -8026,7 +8069,9 @@ ENDMAP
         sceneImage: currentSceneImage,
         sceneCaption: currentSceneCaption,
         scenePrompt: currentScenePrompt,
-        sceneHistory: sceneHistory
+        sceneHistory: sceneHistory,
+        governmentAgencies: governmentAgencies,
+        agencyLastMonth: _agencyLastMonth
       };
       var blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
       var url = URL.createObjectURL(blob);
@@ -8089,6 +8134,8 @@ ENDMAP
           currentSceneCaption = saveData.sceneCaption || '';
           currentScenePrompt = saveData.scenePrompt || '';
           sceneHistory = saveData.sceneHistory || [];
+          governmentAgencies = saveData.governmentAgencies || [];
+          _agencyLastMonth = saveData.agencyLastMonth || '';
           // 保存到 localStorage
           saveGame();
           // 重新渲染
@@ -8257,6 +8304,7 @@ ENDMAP
       renderEthnicityPieChart();
       renderReligionPieChart();
       renderScenePanel();
+      renderAgencyPanel();
       recordPopGrowth();
       renderPopGrowthChart();
       fitNarrativeHeight();
@@ -9011,6 +9059,202 @@ ENDMAP
       }
     }
 
+    // ==================== 政府机构系统 ====================
+    function getAgencyTypeIcon(type) {
+      var icons = {
+        '行政': '📋', '财政': '💰', '治安': '🛡️', '建设': '🏗️', '教育': '📚',
+        '医疗': '🏥', '交通': '🚗', '环保': '🌳', '司法': '⚖️', '外交': '🌐',
+        '军事': '⚔️', '农业': '🌾', '工业': '🏭', '商业': '💼', '文化': '🎭'
+      };
+      return icons[type] || '🏛️';
+    }
+
+    function getScaleBadge(scale) {
+      var colors = { '小型': '#27ae60', '中型': '#f39c12', '大型': '#e74c3c' };
+      return '<span style="background:' + (colors[scale] || '#999') + ';color:#fff;padding:1px 4px;border-radius:3px;font-size:10px">' + scale + '</span>';
+    }
+
+    function getStatColor(value, isBad) {
+      if (isBad) {
+        if (value >= 70) return '#e74c3c';
+        if (value >= 40) return '#f39c12';
+        return '#27ae60';
+      } else {
+        if (value >= 70) return '#27ae60';
+        if (value >= 40) return '#f39c12';
+        return '#e74c3c';
+      }
+    }
+
+    function getIdeologyBadge(ideology) {
+      var colors = { '保守': '#8e44ad', '中立': '#7f8c8d', '改革': '#3498db' };
+      return '<span style="background:' + (colors[ideology] || '#999') + ';color:#fff;padding:1px 4px;border-radius:3px;font-size:10px">' + ideology + '</span>';
+    }
+
+    function renderAgencyPanel() {
+      var panel = document.getElementById('agency-panel');
+      if (!panel) return;
+
+      if (governmentAgencies.length === 0) {
+        panel.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">暂无政府机构数据。<br>将在下一回合自动生成。</p>';
+        return;
+      }
+
+      var html = '<div class="space-y-2">';
+      governmentAgencies.forEach(function (agency, idx) {
+        html += '<div class="bg-white rounded-lg p-2 border border-[#8b5a2b]/30 shadow-sm">';
+        html += '<div class="flex justify-between items-center mb-1">';
+        html += '<div class="flex items-center gap-1">';
+        html += '<span style="font-size:14px">' + getAgencyTypeIcon(agency.type) + '</span>';
+        html += '<span class="font-bold text-[#8b5a2b] text-sm">' + agency.name + '</span>';
+        html += getScaleBadge(agency.scale);
+        if (agency.ideology) html += getIdeologyBadge(agency.ideology);
+        html += '</div>';
+        html += '</div>';
+
+        html += '<div class="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">';
+        html += '<div><span class="text-gray-500">负责人:</span> <span class="font-semibold">' + (agency.head || '待任命') + '</span></div>';
+        html += '<div><span class="text-gray-500">能力:</span> <span style="color:' + getStatColor(agency.headAbility, false) + '">' + (agency.headAbility || 0) + '</span></div>';
+        html += '<div><span class="text-gray-500">满意度:</span> <span style="color:' + getStatColor(agency.satisfaction, false) + '">' + (agency.satisfaction || 0) + '</span></div>';
+        html += '<div><span class="text-gray-500">腐败:</span> <span style="color:' + getStatColor(agency.corruption, true) + '">' + (agency.corruption || 0) + '</span></div>';
+        html += '<div><span class="text-gray-500">勤奋:</span> <span style="color:' + getStatColor(agency.diligence, false) + '">' + (agency.diligence || 0) + '</span></div>';
+        html += '<div><span class="text-gray-500">人员:</span> ' + (agency.staffCount || 0) + '人</div>';
+        html += '</div>';
+
+        if (agency.headTrait || agency.headIdeology) {
+          html += '<div class="mt-1 text-xs text-gray-400">';
+          if (agency.headTrait) html += '性格: ' + agency.headTrait + ' ';
+          if (agency.headIdeology) html += '理念: ' + agency.headIdeology;
+          html += '</div>';
+        }
+
+        if (agency.alert) {
+          html += '<div class="mt-1 p-1 rounded text-xs" style="background:#fff3cd;color:#856404;border:1px solid #ffc107">⚠️ ' + agency.alert + '</div>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+      panel.innerHTML = html;
+    }
+
+    function generateGovernmentAgencies() {
+      var c = getConfig();
+      if (!c || !c.key) return;
+
+      var cityName = gameState.header.location || '这座城市';
+      var city = gameState.city || {};
+      var macro = gameState.macro || {};
+      var admin = gameState.admin || {};
+      var eraHint = city.face || city.geo_text || '';
+
+      var style = getNPCNameStyle();
+      var nameStyle = style.nameStyle;
+
+      var prompt = '根据城市背景生成政府机构列表。\n\n城市：' + cityName + '\n时代背景：' + eraHint + '\n人口：' + (gameState.demo.population || '未知') + '\n行政状态：腐败' + (admin.corruption || '一般') + '，效率' + (admin.execution_efficiency || '一般') + '\n\n要求：\n1. 根据时代背景生成5-8个合适的机构（古代可能只有衙门、户部等，现代有财政局、教育局等）\n2. 每个机构包含：\n   - name: 机构名称\n   - type: 类型（行政/财政/治安/建设/教育/医疗/交通/环保/司法/外交/军事/农业/工业/商业/文化）\n   - scale: 规模（小型/中型/大型）\n   - head: 负责人姓名（' + nameStyle + '）\n   - headAbility: 办公能力(0-100)\n   - headTrait: 负责人性格（一个词，如"圆滑"、"固执"、"激进"）\n   - headIdeology: 负责人理念（一个词，如"保守"、"改革"、"实用主义"）\n   - satisfaction: 满意度(0-100)\n   - corruption: 腐败程度(0-100)\n   - diligence: 勤奋程度(0-100)\n   - staffCount: 人员数量\n   - ideology: 机构整体理念倾向（保守/中立/改革）\n3. 数值要合理：腐败高则满意度低；能力高则勤奋高；大型机构人员多\n4. 至少有一两个机构存在问题（低满意度、高腐败、低勤奋等）\n5. 负责人的性格和理念可能与市长（玩家）冲突\n6. 只输出JSON数组，不要其他内容\n\n格式：\n```json\n[\n  {"name":"...", "type":"...", ...},\n  ...\n]\n```';
+
+      fetch(c.url + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: c.model || 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 2000, stream: false })
+      }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (data) {
+          var text = (data.choices[0].message.content || '').trim();
+          var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\[[\s\S]*\])/);
+          if (!jsonMatch) throw new Error('未找到JSON');
+          var agencies = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+          if (!Array.isArray(agencies)) throw new Error('解析失败');
+
+          governmentAgencies = agencies.map(function (a) {
+            return {
+              name: a.name || '未命名机构',
+              type: a.type || '行政',
+              scale: a.scale || '中型',
+              head: a.head || '待任命',
+              headAbility: Math.min(100, Math.max(0, parseInt(a.headAbility) || 50)),
+              headTrait: a.headTrait || '',
+              headIdeology: a.headIdeology || '中立',
+              satisfaction: Math.min(100, Math.max(0, parseInt(a.satisfaction) || 50)),
+              corruption: Math.min(100, Math.max(0, parseInt(a.corruption) || 20)),
+              diligence: Math.min(100, Math.max(0, parseInt(a.diligence) || 50)),
+              staffCount: parseInt(a.staffCount) || 50,
+              ideology: a.ideology || '中立',
+              lastUpdate: gameState.header.time || ''
+            };
+          });
+
+          // 检查问题并生成警报
+          governmentAgencies.forEach(function (a) {
+            if (a.corruption > 60) a.alert = '腐败问题严重，可能影响政策执行';
+            else if (a.satisfaction < 30) a.alert = '满意度过低，可能引发问题';
+            else if (a.diligence < 30) a.alert = '工作效率低下';
+            else if (a.headAbility < 30) a.alert = '负责人能力不足';
+          });
+
+          saveGame();
+          renderAgencyPanel();
+        }).catch(function (err) {
+          console.warn('政府机构生成失败:', err);
+          // 生成默认机构
+          governmentAgencies = getDefaultAgencies();
+          renderAgencyPanel();
+        });
+    }
+
+    function getDefaultAgencies() {
+      return [
+        { name: '行政厅', type: '行政', scale: '大型', head: '张守正', headAbility: 65, headTrait: '圆滑', headIdeology: '保守', satisfaction: 55, corruption: 35, diligence: 60, staffCount: 120, ideology: '中立', lastUpdate: '' },
+        { name: '财政局', type: '财政', scale: '中型', head: '李金库', headAbility: 70, headTrait: '精明', headIdeology: '实用主义', satisfaction: 50, corruption: 45, diligence: 55, staffCount: 80, ideology: '保守', lastUpdate: '' },
+        { name: '治安署', type: '治安', scale: '中型', head: '王铁壁', headAbility: 80, headTrait: '固执', headIdeology: '改革', satisfaction: 70, corruption: 20, diligence: 75, staffCount: 150, ideology: '改革', lastUpdate: '' },
+        { name: '建设局', type: '建设', scale: '中型', head: '陈筑业', headAbility: 45, headTrait: '懒散', headIdeology: '中立', satisfaction: 40, corruption: 55, diligence: 30, staffCount: 60, ideology: '中立', alert: '工作效率低下', lastUpdate: '' }
+      ];
+    }
+
+    function updateAgencyMonthly() {
+      var c = getConfig();
+      if (!c || !c.key || governmentAgencies.length === 0) return;
+
+      var gameTime = gameState.header.time || '';
+      var dayMatch = gameTime.match(/(\d+)年(\d+)月/);
+      if (!dayMatch) return;
+      var currentMonth = dayMatch[1] + '-' + ('0' + dayMatch[2]).slice(-2);
+      if (_agencyLastMonth === currentMonth) return;
+      _agencyLastMonth = currentMonth;
+
+      var lastDecision = historyDecisions.length > 0 ? historyDecisions[historyDecisions.length - 1] : '无';
+      var macroChanges = gameState.macro || {};
+
+      var prompt = '更新政府机构状态。\n\n上月决策：' + lastDecision + '\n经济变化：GDP增长' + (macroChanges.growth_rate || '稳定') + '\n\n当前机构列表：\n' + JSON.stringify(governmentAgencies.map(function (a) { return { name: a.name, head: a.head, satisfaction: a.satisfaction, corruption: a.corruption, diligence: a.diligence }; })) + '\n\n要求：\n1. 根据上月决策和经济变化，微调各机构数值\n2. 每个数值变化幅度不超过±10\n3. 满意度/腐败/勤奋根据决策影响调整\n4. 如果决策与某机构负责人理念冲突，可能导致：\n   - 满意度下降\n   - 勤奋下降（阳奉阴违）\n   - 或新增alert字段说明问题\n5. 决策执行效果可能受腐败影响打折扣\n6. 只输出JSON数组，格式同上\n\n输出：```json\n[{name, satisfaction, corruption, diligence, headIdeology, alert(可选)}...]\n```';
+
+      fetch(c.url + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: c.model || 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 1500, stream: false })
+      }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (data) {
+          var text = (data.choices[0].message.content || '').trim();
+          var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\[[\s\S]*\])/);
+          if (!jsonMatch) return;
+          var updates = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+          if (!Array.isArray(updates)) return;
+
+          updates.forEach(function (u) {
+            var agency = governmentAgencies.find(function (a) { return a.name === u.name; });
+            if (agency) {
+              if (u.satisfaction) agency.satisfaction = Math.min(100, Math.max(0, parseInt(u.satisfaction)));
+              if (u.corruption) agency.corruption = Math.min(100, Math.max(0, parseInt(u.corruption)));
+              if (u.diligence) agency.diligence = Math.min(100, Math.max(0, parseInt(u.diligence)));
+              if (u.alert) agency.alert = u.alert;
+              else agency.alert = null;
+              agency.lastUpdate = gameTime;
+            }
+          });
+
+          saveGame();
+          renderAgencyPanel();
+        }).catch(function (err) { console.warn('机构月度更新失败:', err); });
+    }
+
     function generateBroadcastContent() {
       var c = getConfig();
       if (!c.key) return;
@@ -9081,13 +9325,40 @@ ENDMAP
         var lastText = latest ? latest.text : '等待首日记录...';
         var lastMood = latest ? latest.mood : '';
         var moodEmoji = getMoodEmoji(lastMood);
+
+        // 性格和理念徽章
+        var personalityBadge = npc.personality ? '<span style="background:#9b59b6;color:#fff;padding:1px 4px;border-radius:3px;font-size:10px;margin-left:2px">' + npc.personality + '</span>' : '';
+        var ideologyBadge = npc.ideology ? '<span style="background:' + (npc.ideology === '保守' ? '#8e44ad' : npc.ideology === '改革' ? '#3498db' : '#7f8c8d') + ';color:#fff;padding:1px 4px;border-radius:3px;font-size:10px;margin-left:2px">' + npc.ideology + '</span>' : '';
+
+        // 忠诚度/可信度/服从度指示
+        var loyaltyColor = npc.loyalty >= 70 ? '#27ae60' : npc.loyalty >= 40 ? '#f39c12' : '#e74c3c';
+        var trustColor = npc.trustworthiness >= 70 ? '#27ae60' : npc.trustworthiness >= 40 ? '#f39c12' : '#e74c3c';
+        var complianceColor = npc.compliance >= 70 ? '#27ae60' : npc.compliance >= 40 ? '#f39c12' : '#e74c3c';
+
         html += '<div class="bg-white rounded-lg p-3 border border-[#d35400]/20 shadow-sm">';
         html += '<div class="flex justify-between items-start mb-2">';
-        html += '<div><p class="font-bold text-[#d35400]">' + npc.name + '</p><p class="text-xs text-gray-500">' + npc.job + ' · ' + npc.age + '岁 · ' + (npc.trait || '') + '</p></div>';
+        html += '<div><p class="font-bold text-[#d35400]">' + npc.name + personalityBadge + ideologyBadge + '</p>';
+        html += '<p class="text-xs text-gray-500">' + npc.job + ' · ' + npc.age + '岁 · ' + (npc.trait || '') + '</p></div>';
         html += '<div class="flex items-center gap-2">';
-        html += '<label class="flex items-center text-xs text-blue-600 cursor-pointer"><input type="checkbox" class="npc-refresh-cb mr-1" value="' + idx + '"' + (npc.pendingRefresh ? ' checked' : '') + '>下回合换人</label>';
+        html += '<label class="flex items-center text-xs text-blue-600 cursor-pointer"><input type="checkbox" class="npc-refresh-cb mr-1" value="' + idx + '"' + (npc.pendingRefresh ? ' checked' : '') + '>换人</label>';
         html += '<button onclick="removePinnedNPC(' + idx + ')" class="text-gray-400 hover:text-red-500 text-xs px-1">✕</button>';
         html += '</div></div>';
+
+        // 属性指示条
+        html += '<div class="flex gap-2 text-[10px] mb-1">';
+        html += '<span title="忠诚度">🎯<span style="color:' + loyaltyColor + '">' + (npc.loyalty || 50) + '</span></span>';
+        html += '<span title="可信度">📊<span style="color:' + trustColor + '">' + (npc.trustworthiness || 50) + '</span></span>';
+        html += '<span title="服从度">⚡<span style="color:' + complianceColor + '">' + (npc.compliance || 50) + '</span></span>';
+        html += '</div>';
+
+        // 可能虚报/阳奉阴违的警告
+        if (npc.trustworthiness < 40) {
+          html += '<div class="text-[10px] text-red-500 mb-1">⚠️ 可信度低，可能虚报隐瞒</div>';
+        }
+        if (npc.compliance < 40) {
+          html += '<div class="text-[10px] text-orange-500 mb-1">⚠️ 服从度低，可能阳奉阴违</div>';
+        }
+
         html += '<p class="text-[10px] text-gray-400 mb-1">📅 ' + lastDay + ' ' + moodEmoji + (lastMood ? ' ' + lastMood : '') + '</p>';
         html += '<p class="text-sm text-gray-700 leading-relaxed">' + lastText + '</p>';
         if (npc.background) {
@@ -9225,7 +9496,7 @@ ENDMAP
 
       var style = getNPCNameStyle();
 
-      var prompt = '你是城市社会学研究者，为以下城市生成' + count + '个新的底层市民档案。\n\n要求：\n1. **必须是底层普通市民**：工人、小贩、服务员、摊贩、保安、清洁工等，**绝对不能是官员、商人、贵族、名人**\n2. 每个人物：name(姓名)、age(年龄20-60)、job(职业)、trait(性格特征，如勤劳、乐观、焦虑等)、background(一句话背景故事)\n3. **姓名风格必须符合城市背景**：' + style.nameStyle + '\n4. **背景故事和职业必须符合城市设定**：' + style.eraHint + '\n5. **姓名必须与以下已有市民不同**：' + (existingNames || '') + '\n6. 每个人物的性格特征和背景要多样化，避免重复\n7. JSON数组格式：[{name,age,job,trait,background}]\n8. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop + '\n城市背景：' + cityBackground;
+      var prompt = '你是城市社会学研究者，为以下城市生成' + count + '个新的底层市民档案。\n\n要求：\n1. **必须是底层普通市民**：工人、小贩、服务员、摊贩、保安、清洁工等，**绝对不能是官员、商人、贵族、名人**\n2. 每个人物包含：\n   - name: 姓名\n   - age: 年龄(20-60)\n   - job: 职业\n   - trait: 性格特征（一个词，如"勤劳"、"乐观"、"焦虑"、"固执"）\n   - background: 一句话背景故事\n   - personality: 性格（一个词概括整体性格，如"圆滑"、"直率"、"冲动"）\n   - ideology: 理念倾向（一个词，如"保守"、"改革"、"实用主义"、"激进"、"务实"）\n   - loyalty: 对政府忠诚度(0-100)\n   - trustworthiness: 可信度(0-100)，低的可能虚报隐瞒\n   - compliance: 服从度(0-100)，低的可能阳奉阴违\n3. **姓名风格必须符合城市背景**：' + style.nameStyle + '\n4. **背景故事和职业必须符合城市设定**：' + style.eraHint + '\n5. **姓名必须与以下已有市民不同**：' + (existingNames || '') + '\n6. 性格和理念要多样化，至少有一两人与市政府理念冲突\n7. loyalty/trustworthiness/compliance要合理分布，有高有低\n8. JSON数组格式：[{name,age,job,trait,background,personality,ideology,loyalty,trustworthiness,compliance}]\n9. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop + '\n城市背景：' + cityBackground;
 
       return fetch(c.url + '/chat/completions', {
         method: 'POST',
@@ -9238,6 +9509,15 @@ ENDMAP
           if (!jsonMatch) throw new Error('未找到JSON');
           var newNPCs = JSON.parse(jsonMatch[1] || jsonMatch[0]);
           if (!Array.isArray(newNPCs) || newNPCs.length === 0) throw new Error('解析失败');
+          // 确保新属性存在并限制范围
+          newNPCs = newNPCs.map(function (n) {
+            n.personality = n.personality || '普通';
+            n.ideology = n.ideology || '中立';
+            n.loyalty = Math.min(100, Math.max(0, parseInt(n.loyalty) || 50));
+            n.trustworthiness = Math.min(100, Math.max(0, parseInt(n.trustworthiness) || 50));
+            n.compliance = Math.min(100, Math.max(0, parseInt(n.compliance) || 50));
+            return n;
+          });
           return newNPCs;
         });
     }
@@ -9270,6 +9550,11 @@ ENDMAP
               npc.job = newNPCs[idx].job;
               npc.trait = newNPCs[idx].trait || '';
               npc.background = newNPCs[idx].background || '';
+              npc.personality = newNPCs[idx].personality || '普通';
+              npc.ideology = newNPCs[idx].ideology || '中立';
+              npc.loyalty = newNPCs[idx].loyalty || 50;
+              npc.trustworthiness = newNPCs[idx].trustworthiness || 50;
+              npc.compliance = newNPCs[idx].compliance || 50;
               npc.pendingRefresh = false;
               npc.dailyLog = [];
             }
@@ -9367,10 +9652,15 @@ ENDMAP
       var dayMatch = gameTime.match(/(\d+)年(\d+)月(\d+)日/);
       if (!dayMatch) return;
       var today = dayMatch[1] + '年' + dayMatch[2] + '月' + dayMatch[3] + '日';
+      var currentMonth = dayMatch[1] + '-' + ('0' + dayMatch[2]).slice(-2);
+
+      // 广播更新
       if (_broadcastLastDay !== today || broadcastSegments.length === 0) {
         _broadcastLastDay = today;
         generateBroadcastContent();
       }
+
+      // NPC生活更新
       if (_npcLifeLastDay !== today || pinnedNPCs.length === 0) {
         if (pinnedNPCs.length === 0) {
           _npcLifeLastDay = today;
@@ -9379,6 +9669,13 @@ ENDMAP
           _npcLifeLastDay = today;
           updatePinnedNPCDaily();
         }
+      }
+
+      // 政府机构初始化和月度更新
+      if (governmentAgencies.length === 0) {
+        generateGovernmentAgencies();
+      } else if (_agencyLastMonth !== currentMonth) {
+        updateAgencyMonthly();
       }
     }
 
