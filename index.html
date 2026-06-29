@@ -173,8 +173,7 @@
       flex: 1;
       min-height: 0;
       display: flex;
-      overflow-x: hidden;
-      overflow-y: auto;
+      overflow: hidden;
       position: relative;
     }
 
@@ -9148,10 +9147,7 @@ ENDMAP
       var admin = gameState.admin || {};
       var eraHint = city.face || city.geo_text || '';
 
-      var style = getNPCNameStyle();
-      var nameStyle = style.nameStyle;
-
-      var prompt = '根据城市背景生成政府机构列表。\n\n城市：' + cityName + '\n时代背景：' + eraHint + '\n人口：' + (gameState.demo.population || '未知') + '\n行政状态：腐败' + (admin.corruption || '一般') + '，效率' + (admin.execution_efficiency || '一般') + '\n\n要求：\n1. 根据时代背景生成5-8个合适的机构（古代可能只有衙门、户部等，现代有财政局、教育局等）\n2. 每个机构包含：\n   - name: 机构名称\n   - type: 类型（行政/财政/治安/建设/教育/医疗/交通/环保/司法/外交/军事/农业/工业/商业/文化）\n   - scale: 规模（小型/中型/大型）\n   - head: 负责人姓名（' + nameStyle + '）\n   - headAbility: 办公能力(0-100)\n   - headTrait: 负责人性格（一个词，如"圆滑"、"固执"、"激进"）\n   - headIdeology: 负责人理念（一个词，如"保守"、"改革"、"实用主义"）\n   - satisfaction: 满意度(0-100)\n   - corruption: 腐败程度(0-100)\n   - diligence: 勤奋程度(0-100)\n   - staffCount: 人员数量\n   - ideology: 机构整体理念倾向（保守/中立/改革）\n3. 数值要合理：腐败高则满意度低；能力高则勤奋高；大型机构人员多\n4. 至少有一两个机构存在问题（低满意度、高腐败、低勤奋等）\n5. 负责人的性格和理念可能与市长（玩家）冲突\n6. 只输出JSON数组，不要其他内容\n\n格式：\n```json\n[\n  {"name":"...", "type":"...", ...},\n  ...\n]\n```';
+      var prompt = '根据城市背景生成政府机构列表。\n\n城市：' + cityName + '\n时代背景：' + eraHint + '\n人口：' + (gameState.demo.population || '未知') + '\n行政状态：腐败' + (admin.corruption || '一般') + '，效率' + (admin.execution_efficiency || '一般') + '\n\n要求：\n1. 根据时代背景生成5-8个合适的机构（古代可能只有衙门、户部等，现代有财政局、教育局等）\n2. 每个机构包含：\n   - name: 机构名称（符合该时代/文化背景）\n   - type: 类型（行政/财政/治安/建设/教育/医疗/交通/环保/司法/外交/军事/农业/工业/商业/文化）\n   - scale: 规模（小型/中型/大型）\n   - head: 负责人姓名（根据城市文化背景自然生成，不必指定风格）\n   - headAbility: 办公能力(0-100)\n   - headTrait: 负责人性格（一个词，如"圆滑"、"固执"、"激进"）\n   - headIdeology: 负责人理念（一个词，如"保守"、"改革"、"实用主义"）\n   - satisfaction: 满意度(0-100)\n   - corruption: 腐败程度(0-100)\n   - diligence: 勤奋程度(0-100)\n   - staffCount: 人员数量\n   - ideology: 机构整体理念倾向（保守/中立/改革）\n3. 数值要合理：腐败高则满意度低；能力高则勤奋高；大型机构人员多\n4. 至少有一两个机构存在问题（低满意度、高腐败、低勤奋等）\n5. 负责人的性格和理念可能与市长（玩家）冲突\n6. 只输出JSON数组，不要其他内容\n\n格式：\n```json\n[\n  {"name":"...", "type":"...", ...},\n  ...\n]\n```';
 
       fetch(c.url + '/chat/completions', {
         method: 'POST',
@@ -9405,83 +9401,6 @@ ENDMAP
       }, 50);
     }
 
-    function getNPCNameStyle() {
-      var cityName = gameState.header.location || '';
-      var city = gameState.city || {};
-      var cityBackground = city.face || city.geo_text || '';
-      var eraHint = '';
-      var nameStyle = '';
-
-      var cityNameLower = cityName.toLowerCase();
-      var bgLower = cityBackground.toLowerCase();
-
-      var culturePatterns = [
-        { keywords: ['伦敦', '巴黎', '柏林', '罗马', '维也纳', '阿姆斯特丹', '布鲁塞尔', '马德里', '里斯本', '奥斯陆', '斯德哥尔摩', '哥本哈根', '赫尔辛基', '华沙', '布拉格', '布达佩斯', '雅典', '米兰', '威尼斯', '佛罗伦萨', '巴塞罗那', 'edinburgh', 'dublin', 'amsterdam', 'vienna', 'brussels', 'madrid', 'lisbon', 'stockholm', 'copenhagen', 'helsinki', 'warsaw', 'prague', 'budapest', 'athens', 'milan', 'venice', 'barcelona', 'london', 'paris', 'berlin', 'rome'], name: '欧洲姓名（如John Smith, Maria Garcia, Hans Mueller, Luca Rossi）', era: '欧洲城市' },
-        { keywords: ['纽约', '华盛顿', '芝加哥', '洛杉矶', '旧金山', '休斯顿', '费城', '凤凰城', 'san francisco', 'los angeles', 'chicago', 'new york', 'washington'], name: '欧美姓名（如Michael Johnson, Jennifer Williams, Robert Brown）', era: '美国城市' },
-        { keywords: ['东京', '大阪', '京都', '横滨', '名古屋', '神户', '福冈', '札幌', '仙台', '广岛', 'tokyo', 'osaka', 'kyoto', 'yokohama', 'nagoya', 'kobe', 'fukuoka', 'sapporo'], name: '日本姓名（如山田太郎、佐藤美雪、渡边健一）', era: '日本城市' },
-        { keywords: ['首尔', '釜山', '大邱', '仁川', '光州', '大田', '蔚山', 'seoul', 'busan', 'daegu', 'incheon', 'gwangju', 'daejeon', 'ulsan'], name: '韩国姓名（如金明洙、朴智妍、李在勋）', era: '韩国城市' },
-        { keywords: ['莫斯科', '圣彼得堡', '喀山', '叶卡捷琳堡', 'novosibirsk', 'moscow', 'st. petersburg', 'kazan', 'yekaterinburg'], name: '俄罗斯姓名（如伊万·彼得罗夫、安娜·伊万诺娃、谢尔盖·伊万诺夫）', era: '俄罗斯城市' },
-        { keywords: ['开罗', '亚历山大', 'cairo', 'alexandria'], name: '阿拉伯姓名（如穆罕默德·阿里、法蒂玛·哈桑）', era: '中东/北非城市' },
-        { keywords: ['孟买', '新德里', '加尔各答', 'bangalore', 'mumbai', 'delhi', 'calcutta'], name: '印度姓名（如拉吉夫·甘地、普里娅·辛格）', era: '印度城市' },
-        { keywords: ['悉尼', '墨尔本', '布里斯班', '珀斯', 'sydney', 'melbourne', 'brisbane', 'perth'], name: '澳洲姓名（如James Smith, Emily Wilson）', era: '澳大利亚城市' },
-        { keywords: ['巴西利亚', '圣保罗', '里约热内卢', 'sao paulo', 'rio de janeiro', 'brasilia'], name: '拉丁美洲姓名（如Carlos Silva, Maria Santos）', era: '拉丁美洲城市' },
-        { keywords: ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉', '西安', '重庆', '苏州', '天津', 'beijing', 'shanghai', 'guangzhou', 'shenzhen', 'hangzhou', 'nanjing', 'chengdu', 'wuhan', "xi'an", 'chongqing', 'suzhou', 'tianjin'], name: '中文姓名（如张伟、李娜、王磊）', era: '中国城市' }
-      ];
-
-      var styleMatched = false;
-      for (var i = 0; i < culturePatterns.length; i++) {
-        var cp = culturePatterns[i];
-        if (cp.keywords.some(function (k) { return cityName.includes(k) || cityNameLower.includes(k); })) {
-          nameStyle = cp.name;
-          eraHint = cp.era;
-          styleMatched = true;
-          break;
-        }
-      }
-
-      if (!styleMatched) {
-        if (bgLower.includes('欧洲') || bgLower.includes('地中海') || bgLower.includes('文艺复兴') ||
-          bgLower.includes('巴洛克') || bgLower.includes('罗马') || bgLower.includes('哥特') || bgLower.includes('中世纪') ||
-          bgLower.includes('骑士') || bgLower.includes('城堡') || bgLower.includes('viking') || bgLower.includes('norse')) {
-          nameStyle = '欧洲姓名（如Luca Rossi, Sophie Dubois, Emma Wilson, Lars Anderson）';
-          eraHint = '欧洲风格城市';
-        } else if (bgLower.includes('东方') || bgLower.includes('华夏') || bgLower.includes('大唐') ||
-          bgLower.includes('中原') || bgLower.includes('江南') || bgLower.includes('汉服') || bgLower.includes('紫禁城') ||
-          bgLower.includes('丝绸') || bgLower.includes('瓷器') || bgLower.includes('书法')) {
-          nameStyle = '中文姓名（如张伟、李娜、王磊、陈静）';
-          eraHint = '中国风格城市';
-        } else if (bgLower.includes('幕府') || bgLower.includes('武士') || bgLower.includes('茶道') ||
-          bgLower.includes('和服') || bgLower.includes('禅') || bgLower.includes('能剧') || bgLower.includes('浮世绘')) {
-          nameStyle = '日本姓名（如山田太郎、佐藤美雪、渡边健一）';
-          eraHint = '日本风格城市';
-        } else if (bgLower.includes('韩服') || bgLower.includes('泡菜') || bgLower.includes('韩剧') ||
-          bgLower.includes('世宗') || bgLower.includes('景福宫')) {
-          nameStyle = '韩国姓名（如金明洙、朴智妍、李在勋）';
-          eraHint = '韩国风格城市';
-        } else if (bgLower.includes('沙皇') || bgLower.includes('伏特加') || bgLower.includes('芭蕾') ||
-          bgLower.includes('西伯利亚') || bgLower.includes('克里姆林')) {
-          nameStyle = '俄罗斯姓名（如伊万·彼得罗夫、安娜·伊万诺娃）';
-          eraHint = '俄罗斯风格城市';
-        } else if (bgLower.includes('沙漠') || bgLower.includes('绿洲') || bgLower.includes('清真寺') ||
-          bgLower.includes('古兰经') || bgLower.includes('阿拉伯') || bgLower.includes('贝都因')) {
-          nameStyle = '阿拉伯姓名（如穆罕默德·阿里、法蒂玛·哈桑）';
-          eraHint = '中东风格城市';
-        } else if (bgLower.includes('泰姬陵') || bgLower.includes('恒河') || bgLower.includes('瑜伽') ||
-          bgLower.includes('咖喱') || bgLower.includes('宝莱坞')) {
-          nameStyle = '印度姓名（如拉吉夫·甘地、普里娅·辛格）';
-          eraHint = '印度风格城市';
-        } else if (/^[a-zA-Z\s]+$/.test(cityName.replace(/[.,!?'"]/g, ''))) {
-          nameStyle = '欧美姓名（如Michael Johnson, Jennifer Williams）';
-          eraHint = '欧美城市';
-        } else {
-          nameStyle = '中文姓名（如张伟、李娜、王磊）';
-          eraHint = '中国城市';
-        }
-      }
-
-      return { nameStyle: nameStyle, eraHint: eraHint };
-    }
-
     function generateNPCs(count, existingNames) {
       var c = getConfig();
       if (!c.key) return;
@@ -9494,9 +9413,7 @@ ENDMAP
       if (jobs.length === 0) jobs = ['工厂工人', '小商贩', '服务员', '清洁工', '出租车司机', '快递员', '摊贩', '保安', '建筑工人', '厨师', '售货员', '修理工'];
       var cityBackground = city.face || city.geo_text || '';
 
-      var style = getNPCNameStyle();
-
-      var prompt = '你是城市社会学研究者，为以下城市生成' + count + '个新的底层市民档案。\n\n要求：\n1. **必须是底层普通市民**：工人、小贩、服务员、摊贩、保安、清洁工等，**绝对不能是官员、商人、贵族、名人**\n2. 每个人物包含：\n   - name: 姓名\n   - age: 年龄(20-60)\n   - job: 职业\n   - trait: 性格特征（一个词，如"勤劳"、"乐观"、"焦虑"、"固执"）\n   - background: 一句话背景故事\n   - personality: 性格（一个词概括整体性格，如"圆滑"、"直率"、"冲动"）\n   - ideology: 理念倾向（一个词，如"保守"、"改革"、"实用主义"、"激进"、"务实"）\n   - loyalty: 对政府忠诚度(0-100)\n   - trustworthiness: 可信度(0-100)，低的可能虚报隐瞒\n   - compliance: 服从度(0-100)，低的可能阳奉阴违\n3. **姓名风格必须符合城市背景**：' + style.nameStyle + '\n4. **背景故事和职业必须符合城市设定**：' + style.eraHint + '\n5. **姓名必须与以下已有市民不同**：' + (existingNames || '') + '\n6. 性格和理念要多样化，至少有一两人与市政府理念冲突\n7. loyalty/trustworthiness/compliance要合理分布，有高有低\n8. JSON数组格式：[{name,age,job,trait,background,personality,ideology,loyalty,trustworthiness,compliance}]\n9. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop + '\n城市背景：' + cityBackground;
+      var prompt = '你是城市社会学研究者，为以下城市生成' + count + '个新的底层市民档案。\n\n要求：\n1. **必须是底层普通市民**：工人、小贩、服务员、摊贩、保安、清洁工等，**绝对不能是官员、商人、贵族、名人**\n2. 每个人物包含：\n   - name: 姓名（根据城市文化背景自然生成，符合该时代/地区/种族的命名习惯）\n   - age: 年龄(20-60)\n   - job: 职业（符合城市时代背景）\n   - trait: 性格特征（一个词，如"勤劳"、"乐观"、"焦虑"、"固执"）\n   - background: 一句话背景故事\n   - personality: 性格（一个词概括整体性格，如"圆滑"、"直率"、"冲动"）\n   - ideology: 理念倾向（一个词，如"保守"、"改革"、"实用主义"、"激进"、"务实"）\n   - loyalty: 对政府忠诚度(0-100)\n   - trustworthiness: 可信度(0-100)，低的可能虚报隐瞒\n   - compliance: 服从度(0-100)，低的可能阳奉阴违\n3. **姓名必须与以下已有市民不同**：' + (existingNames || '') + '\n4. 性格和理念要多样化，至少有一两人与市政府理念冲突\n5. loyalty/trustworthiness/compliance要合理分布，有高有低\n6. JSON数组格式：[{name,age,job,trait,background,personality,ideology,loyalty,trustworthiness,compliance}]\n7. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop + '\n城市背景：' + cityBackground;
 
       return fetch(c.url + '/chat/completions', {
         method: 'POST',
@@ -9690,13 +9607,7 @@ ENDMAP
       if (econ.facilities) econ.facilities.forEach(function (f) { if (f.type) jobs.push(f.type); });
       if (jobs.length === 0) jobs = ['工厂工人', '小商贩', '服务员', '清洁工', '出租车司机', '快递员', '摊贩', '保安'];
 
-      // 获取城市背景信息用于生成符合背景的NPC
-      var cityBackground = city.face || city.geo_text || '';
-      var style = getNPCNameStyle();
-      var nameStyle = style.nameStyle;
-      var eraHint = style.eraHint;
-
-      var prompt = '你是城市社会学研究者，为旧存档迁移生成3个底层市民档案。\n\n要求：\n1. **必须是底层普通市民**，绝对不能是官员、商人、贵族、名人\n2. 每个人物：name(姓名)、age(年龄20-60)、job(职业)、trait(性格特征)、background(一句话背景)\n3. **姓名风格必须符合城市背景**：' + nameStyle + '\n4. **背景故事和职业必须符合城市设定**：' + eraHint + '\n5. JSON数组格式：[{name,age,job,trait,background}]\n6. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop + '\n城市背景：' + cityBackground;
+      var prompt = '你是城市社会学研究者，为旧存档迁移生成3个底层市民档案。\n\n要求：\n1. **必须是底层普通市民**，绝对不能是官员、商人、贵族、名人\n2. 每个人物：name(姓名，符合城市文化背景自然生成)、age(年龄20-60)、job(职业)、trait(性格特征)、background(一句话背景)\n3. JSON数组格式：[{name,age,job,trait,background}]\n4. 只输出JSON，不要其他文字\n\n职业池：' + jobs.join('、') + '\n城市：' + cityName + '，人口：' + pop + '\n城市背景：' + cityBackground;
       fetch(c.url + '/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + c.key, 'Content-Type': 'application/json' },
