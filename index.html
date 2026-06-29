@@ -6327,14 +6327,16 @@ ENDMAP
       if (!canvas) return;
       var container = canvas.parentElement;
       if (!container) return;
-      var w = container.clientWidth, h = container.clientHeight;
+      var rect = container.getBoundingClientRect();
+      var w = Math.floor(rect.width);
+      var h = Math.floor(rect.height);
       if (w < 10 || h < 10) return;
       var dpr = window.devicePixelRatio || 1;
-      if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
-        canvas.width = Math.floor(w * dpr);
-        canvas.height = Math.floor(h * dpr);
-        canvas.style.width = w + 'px';
-        canvas.style.height = h + 'px';
+      var newWidth = Math.floor(w * dpr);
+      var newHeight = Math.floor(h * dpr);
+      if (canvas.width !== newWidth || canvas.height !== newHeight) {
+        canvas.width = newWidth;
+        canvas.height = newHeight;
       }
       var ctx = canvas.getContext('2d');
       ctx.setTransform(1, 0, 0, 1, 0, 0);
